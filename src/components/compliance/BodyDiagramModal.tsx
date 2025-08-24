@@ -1,30 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Canvas as FabricCanvas, Circle, FabricText, Rect } from "fabric";
+import { Canvas as FabricCanvas, Circle, FabricText, FabricImage, Rect } from "fabric";
 
-// Body part regions with their names and approximate click areas
+// Body part regions with their names and approximate click areas (adjusted for the body diagram image)
 const BODY_PARTS = [
-  { name: "Head", x: 200, y: 80, region: { minX: 180, maxX: 220, minY: 60, maxY: 100 } },
-  { name: "Neck", x: 200, y: 110, region: { minX: 190, maxX: 210, minY: 100, maxY: 120 } },
-  { name: "Left Shoulder", x: 160, y: 140, region: { minX: 150, maxX: 180, minY: 130, maxY: 160 } },
-  { name: "Right Shoulder", x: 240, y: 140, region: { minX: 220, maxX: 250, minY: 130, maxY: 160 } },
-  { name: "Left Arm", x: 130, y: 180, region: { minX: 110, maxX: 160, minY: 160, maxY: 220 } },
-  { name: "Right Arm", x: 270, y: 180, region: { minX: 240, maxX: 290, minY: 160, maxY: 220 } },
-  { name: "Chest", x: 200, y: 170, region: { minX: 180, maxX: 220, minY: 150, maxY: 200 } },
-  { name: "Abdomen", x: 200, y: 220, region: { minX: 180, maxX: 220, minY: 200, maxY: 250 } },
-  { name: "Left Hand", x: 100, y: 230, region: { minX: 90, maxX: 120, minY: 220, maxY: 250 } },
-  { name: "Right Hand", x: 300, y: 230, region: { minX: 280, maxX: 310, minY: 220, maxY: 250 } },
-  { name: "Left Hip", x: 180, y: 260, region: { minX: 170, maxX: 190, minY: 250, maxY: 280 } },
-  { name: "Right Hip", x: 220, y: 260, region: { minX: 210, maxX: 230, minY: 250, maxY: 280 } },
-  { name: "Left Thigh", x: 180, y: 320, region: { minX: 170, maxX: 200, minY: 280, maxY: 360 } },
-  { name: "Right Thigh", x: 220, y: 320, region: { minX: 200, maxX: 230, minY: 280, maxY: 360 } },
-  { name: "Left Knee", x: 180, y: 380, region: { minX: 170, maxX: 200, minY: 360, maxY: 400 } },
-  { name: "Right Knee", x: 220, y: 380, region: { minX: 200, maxX: 230, minY: 360, maxY: 400 } },
-  { name: "Left Shin", x: 180, y: 440, region: { minX: 170, maxX: 200, minY: 400, maxY: 480 } },
-  { name: "Right Shin", x: 220, y: 440, region: { minX: 200, maxX: 230, minY: 400, maxY: 480 } },
-  { name: "Left Foot", x: 180, y: 500, region: { minX: 170, maxX: 200, minY: 480, maxY: 520 } },
-  { name: "Right Foot", x: 220, y: 500, region: { minX: 200, maxX: 230, minY: 480, maxY: 520 } },
+  { name: "Head", x: 200, y: 60, region: { minX: 180, maxX: 220, minY: 40, maxY: 80 } },
+  { name: "Neck", x: 200, y: 90, region: { minX: 190, maxX: 210, minY: 80, maxY: 110 } },
+  { name: "Left Shoulder", x: 160, y: 120, region: { minX: 140, maxX: 180, minY: 110, maxY: 140 } },
+  { name: "Right Shoulder", x: 240, y: 120, region: { minX: 220, maxX: 260, minY: 110, maxY: 140 } },
+  { name: "Left Arm", x: 120, y: 160, region: { minX: 100, maxX: 150, minY: 140, maxY: 200 } },
+  { name: "Right Arm", x: 280, y: 160, region: { minX: 250, maxX: 300, minY: 140, maxY: 200 } },
+  { name: "Chest", x: 200, y: 150, region: { minX: 180, maxX: 220, minY: 130, maxY: 180 } },
+  { name: "Abdomen", x: 200, y: 200, region: { minX: 180, maxX: 220, minY: 180, maxY: 230 } },
+  { name: "Left Hand", x: 90, y: 210, region: { minX: 80, maxX: 110, minY: 200, maxY: 230 } },
+  { name: "Right Hand", x: 310, y: 210, region: { minX: 290, maxX: 320, minY: 200, maxY: 230 } },
+  { name: "Left Hip", x: 180, y: 240, region: { minX: 170, maxX: 190, minY: 230, maxY: 260 } },
+  { name: "Right Hip", x: 220, y: 240, region: { minX: 210, maxX: 230, minY: 230, maxY: 260 } },
+  { name: "Left Thigh", x: 180, y: 300, region: { minX: 170, maxX: 200, minY: 260, maxY: 340 } },
+  { name: "Right Thigh", x: 220, y: 300, region: { minX: 200, maxX: 230, minY: 260, maxY: 340 } },
+  { name: "Left Knee", x: 180, y: 360, region: { minX: 170, maxX: 200, minY: 340, maxY: 380 } },
+  { name: "Right Knee", x: 220, y: 360, region: { minX: 200, maxX: 230, minY: 340, maxY: 380 } },
+  { name: "Left Shin", x: 180, y: 420, region: { minX: 170, maxX: 200, minY: 380, maxY: 460 } },
+  { name: "Right Shin", x: 220, y: 420, region: { minX: 200, maxX: 230, minY: 380, maxY: 460 } },
+  { name: "Left Foot", x: 180, y: 480, region: { minX: 170, maxX: 200, minY: 460, maxY: 500 } },
+  { name: "Right Foot", x: 220, y: 480, region: { minX: 200, maxX: 230, minY: 460, maxY: 500 } },
 ];
 
 interface BodyMarker {
@@ -61,17 +61,74 @@ export default function BodyDiagramModal({
       backgroundColor: "#ffffff",
     });
 
-    // Create a simple body outline (basic human figure)
-    // Head (circle)
-    canvas.add(new Circle({ left: 185, top: 65, radius: 25, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
-    // Body (rectangle)
-    canvas.add(new Rect({ left: 175, top: 120, width: 50, height: 100, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
-    // Arms
-    canvas.add(new Rect({ left: 130, top: 140, width: 40, height: 15, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
-    canvas.add(new Rect({ left: 230, top: 140, width: 40, height: 15, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
-    // Legs
-    canvas.add(new Rect({ left: 180, top: 230, width: 15, height: 80, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
-    canvas.add(new Rect({ left: 205, top: 230, width: 15, height: 80, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+    // Load the body diagram image
+    const loadBodyDiagram = async () => {
+      try {
+        const imgElement = document.createElement('img');
+        imgElement.crossOrigin = 'anonymous';
+        imgElement.src = '/body-diagram.png';
+        
+        imgElement.onload = () => {
+          FabricImage.fromURL('/body-diagram.png').then((img) => {
+            // Scale the image to fit the canvas while maintaining aspect ratio
+            const scaleX = canvas.width! / img.width!;
+            const scaleY = canvas.height! / img.height!;
+            const scale = Math.min(scaleX, scaleY);
+            
+            img.set({
+              scaleX: scale,
+              scaleY: scale,
+              left: (canvas.width! - img.width! * scale) / 2,
+              top: (canvas.height! - img.height! * scale) / 2,
+              selectable: false,
+              evented: false,
+            });
+            
+            canvas.add(img);
+            canvas.sendObjectToBack(img);
+            canvas.renderAll();
+            
+            // Add initial markers after the image is loaded
+            initialMarkers.forEach(marker => {
+              addMarkerToCanvas(canvas, marker.x, marker.y, marker.bodyPart);
+            });
+          });
+        };
+        
+        imgElement.onerror = () => {
+          console.log('Failed to load body diagram, using fallback shapes');
+          // Fallback to basic shapes if image fails to load
+          drawFallbackBodyOutline(canvas);
+          
+          // Add initial markers
+          initialMarkers.forEach(marker => {
+            addMarkerToCanvas(canvas, marker.x, marker.y, marker.bodyPart);
+          });
+        };
+      } catch (error) {
+        console.error('Error loading body diagram:', error);
+        drawFallbackBodyOutline(canvas);
+        
+        // Add initial markers
+        initialMarkers.forEach(marker => {
+          addMarkerToCanvas(canvas, marker.x, marker.y, marker.bodyPart);
+        });
+      }
+    };
+
+    const drawFallbackBodyOutline = (canvas: FabricCanvas) => {
+      // Fallback basic body outline
+      // Head (circle)
+      canvas.add(new Circle({ left: 185, top: 45, radius: 25, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+      // Body (rectangle)
+      canvas.add(new Rect({ left: 175, top: 100, width: 50, height: 100, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+      // Arms
+      canvas.add(new Rect({ left: 130, top: 120, width: 40, height: 15, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+      canvas.add(new Rect({ left: 230, top: 120, width: 40, height: 15, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+      // Legs
+      canvas.add(new Rect({ left: 180, top: 210, width: 15, height: 80, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+      canvas.add(new Rect({ left: 205, top: 210, width: 15, height: 80, fill: "transparent", stroke: "#333", strokeWidth: 2, selectable: false }));
+    };
 
     canvas.on('mouse:down', (e) => {
       const pointer = canvas.getPointer(e.e);
@@ -82,11 +139,7 @@ export default function BodyDiagramModal({
       }
     });
 
-    // Add initial markers
-    initialMarkers.forEach(marker => {
-      addMarkerToCanvas(canvas, marker.x, marker.y, marker.bodyPart);
-    });
-
+    loadBodyDiagram();
     setFabricCanvas(canvas);
 
     return () => {
@@ -141,10 +194,16 @@ export default function BodyDiagramModal({
       // Remove existing marker
       setMarkers(prev => prev.filter((_, i) => i !== existingIndex));
       
-      // Clear and redraw canvas
+      // Remove existing marker from canvas
       if (fabricCanvas) {
-        fabricCanvas.clear();
-        fabricCanvas.backgroundColor = "#ffffff";
+        const objects = fabricCanvas.getObjects();
+        const toRemove = objects.filter(obj => 
+          (obj.type === 'circle' && obj.fill === '#dc2626') || // markers
+          obj.type === 'text' // labels
+        );
+        
+        toRemove.forEach(obj => fabricCanvas.remove(obj));
+        fabricCanvas.renderAll();
         
         // Redraw all markers except the one being replaced
         markers.filter((_, i) => i !== existingIndex).forEach(marker => {
@@ -170,8 +229,14 @@ export default function BodyDiagramModal({
   const handleClear = () => {
     setMarkers([]);
     if (fabricCanvas) {
-      fabricCanvas.clear();
-      fabricCanvas.backgroundColor = "#ffffff";
+      // Remove only markers and labels, keep the body diagram
+      const objects = fabricCanvas.getObjects();
+      const toRemove = objects.filter(obj => 
+        obj.type === 'circle' && obj.fill === '#dc2626' || // markers
+        obj.type === 'text' // labels
+      );
+      
+      toRemove.forEach(obj => fabricCanvas.remove(obj));
       fabricCanvas.renderAll();
     }
   };
