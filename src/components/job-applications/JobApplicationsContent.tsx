@@ -16,20 +16,20 @@ import { ReviewSummary } from "@/components/job-application/ReviewSummary";
 import { DatePickerWithRange } from "@/components/ui/date-picker";
 import { DateRange } from "react-day-picker";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-// Helper function to format dates from YYYY-MM-DD to DD/MM/YYYY
+// Helper function to format dates from YYYY-MM-DD to MM/DD/YYYY
 const formatDateDisplay = (dateString: string | null | undefined): string => {
   if (!dateString) return 'Not provided';
   
-  // Check if it's already in DD/MM/YYYY format
+  // Check if it's already in MM/DD/YYYY format
   if (dateString.includes('/')) return dateString;
   
-  // Convert from YYYY-MM-DD to DD/MM/YYYY
+  // Convert from YYYY-MM-DD to MM/DD/YYYY
   try {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${month}/${day}/${year}`;
   } catch (error) {
     return dateString; // Return original if conversion fails
   }
@@ -66,11 +66,9 @@ export function JobApplicationsContent() {
   const [pageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [statusOptions, setStatusOptions] = useState<string[]>(['new','reviewing','interviewed','accepted','rejected']);
-  const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const { toast } = useToast();
   useEffect(() => {
     fetchStatusOptions();
-    fetchTimeSlots();
   }, []);
 
   useEffect(() => {
@@ -91,22 +89,6 @@ export function JobApplicationsContent() {
       }
     } catch (e) {
       // ignore, use defaults
-    }
-  };
-
-  const fetchTimeSlots = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('application_shift_settings')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-      
-      if (!error && data) {
-        setTimeSlots(data);
-      }
-    } catch (e) {
-      console.error('Error fetching time slots:', e);
     }
   };
 
@@ -444,7 +426,6 @@ Please complete and return this reference as soon as possible.`;
                                   application={selectedApplication} 
                                   onUpdate={fetchApplications}
                                   onSendReferenceEmail={sendReferenceEmail}
-                                  timeSlots={timeSlots}
                                 />
                               )}
                             </ScrollArea>
@@ -549,13 +530,11 @@ Please complete and return this reference as soon as possible.`;
 function ApplicationDetails({ 
   application, 
   onUpdate, 
-  onSendReferenceEmail,
-  timeSlots 
+  onSendReferenceEmail 
 }: { 
   application: JobApplication; 
   onUpdate?: () => void;
   onSendReferenceEmail: (app: JobApplication, refIndex: number) => void;
-  timeSlots: any[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(application);
@@ -777,10 +756,45 @@ function ApplicationDetails({
           onSendReferenceEmail={onSendReferenceEmail}
         />
       ) : (
-        // View mode - use comprehensive enhanced layout with proper formatting
-        <EnhancedJobApplicationView data={toJobAppData() as any} timeSlotsData={timeSlots} onSendReferenceEmail={onSendReferenceEmail} application={application} />
+        // View mode - use comprehensive ReviewSummary layout
+        <ReviewSummary data={toJobAppData() as any} />
       )}
       
+      {/* Reference Email Actions */}
+      {!isEditing && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reference Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSendReferenceEmail(application, 1)}
+                disabled={!application.employment_history?.recentEmployer?.email}
+                className="flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Email Recent Employer
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSendReferenceEmail(application, 2)}
+                disabled={!application.employment_history?.previousEmployers?.[0]?.email}
+                className="flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Email Previous Employer
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Send reference request emails to employers
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -979,358 +993,5 @@ function EditableApplicationContent({
         </CardContent>
       </Card>
     </>
-  );
-}
-
-// Enhanced view component with proper formatting for availability, dates, and references
-function EnhancedJobApplicationView({ 
-  data, 
-  timeSlotsData, 
-  onSendReferenceEmail,
-  application 
-}: { 
-  data: any; 
-  timeSlotsData: any[];
-  onSendReferenceEmail: (app: JobApplication, refIndex: number) => void;
-  application: JobApplication;
-}) {
-  // Helper to get time slot name and times
-  const getTimeSlotLabel = (slotId: string) => {
-    const slot = timeSlotsData.find(s => s.id === slotId);
-    return slot ? `${slot.label} (${slot.start_time} - ${slot.end_time})` : slotId;
-  };
-
-  // Format availability with proper time slot names
-  const formatAvailability = () => {
-    const slots = data.availability?.timeSlots || {};
-    const entries = Object.entries(slots);
-    
-    if (entries.length === 0) {
-      return 'No time slots selected';
-    }
-
-    return entries.map(([slotId, days]) => {
-      const slotLabel = getTimeSlotLabel(slotId);
-      const dayList = Array.isArray(days) ? (days as string[]).join(', ') : String(days || '');
-      return `${slotLabel}: ${dayList}`;
-    }).join('\n');
-  };
-
-  // Organize references into clear sections
-  const organizeReferences = () => {
-    const refs = data.references || {};
-    const refEntries = Object.entries(refs).filter(([key, ref]: [string, any]) => 
-      ref && (ref.name || ref.company || ref.email)
-    );
-    
-    return {
-      reference1: refEntries[0]?.[1] || null,
-      reference2: refEntries[1]?.[1] || null,
-      hasEmployerRef: application.employment_history?.recentEmployer?.email,
-      hasPreviousRef: application.employment_history?.previousEmployers?.[0]?.email
-    };
-  };
-
-  const refs = organizeReferences();
-
-  return (
-    <div className="space-y-6">
-      {/* Personal Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>1. Personal Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><span className="font-medium">Title:</span> {data.personalInfo?.title || 'Not provided'}</div>
-            <div><span className="font-medium">Full Name:</span> {data.personalInfo?.fullName || 'Not provided'}</div>
-            <div><span className="font-medium">Email:</span> {data.personalInfo?.email || 'Not provided'}</div>
-            <div><span className="font-medium">Telephone/Mobile:</span> {data.personalInfo?.telephone || 'Not provided'}</div>
-            <div><span className="font-medium">Date of Birth:</span> {formatDateDisplay(data.personalInfo?.dateOfBirth)}</div>
-            <div><span className="font-medium">Street Address:</span> {data.personalInfo?.streetAddress || 'Not provided'}</div>
-            <div><span className="font-medium">Street Address Second Line:</span> {data.personalInfo?.streetAddress2 || 'Not provided'}</div>
-            <div><span className="font-medium">Town:</span> {data.personalInfo?.town || 'Not provided'}</div>
-            <div><span className="font-medium">Borough:</span> {data.personalInfo?.borough || 'Not provided'}</div>
-            <div><span className="font-medium">Postcode:</span> {data.personalInfo?.postcode || 'Not provided'}</div>
-            <div><span className="font-medium">Proficiency in English:</span> {data.personalInfo?.englishProficiency || 'Not provided'}</div>
-            <div><span className="font-medium">Other Languages:</span> {(data.personalInfo?.otherLanguages || []).join(', ') || 'Not provided'}</div>
-            <div><span className="font-medium">Position Applied For:</span> {data.personalInfo?.positionAppliedFor || 'Not provided'}</div>
-            <div><span className="font-medium">Personal Care Willingness:</span> {data.personalInfo?.personalCareWillingness || 'Not provided'}</div>
-            <div><span className="font-medium">Has DBS:</span> {data.personalInfo?.hasDBS || 'Not provided'}</div>
-            <div><span className="font-medium">National Insurance Number:</span> {data.personalInfo?.nationalInsuranceNumber || 'Not provided'}</div>
-            <div><span className="font-medium">Has Car and License:</span> {data.personalInfo?.hasCarAndLicense || 'Not provided'}</div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Availability */}
-      <Card>
-        <CardHeader>
-          <CardTitle>2. Availability</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><span className="font-medium">Hours Per Week:</span> {data.availability?.hoursPerWeek || 'Not provided'}</div>
-              <div><span className="font-medium">Right to Work in UK:</span> {data.availability?.hasRightToWork || 'Not provided'}</div>
-            </div>
-            
-            <div>
-              <span className="font-medium">Selected Time Slots:</span>
-              <div className="mt-2 p-3 bg-muted rounded-md">
-                <pre className="text-sm whitespace-pre-wrap">{formatAvailability()}</pre>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Emergency Contact */}
-      <Card>
-        <CardHeader>
-          <CardTitle>3. Emergency Contact</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><span className="font-medium">Full Name:</span> {data.emergencyContact?.fullName || 'Not provided'}</div>
-            <div><span className="font-medium">Relationship:</span> {data.emergencyContact?.relationship || 'Not provided'}</div>
-            <div><span className="font-medium">Contact Number:</span> {data.emergencyContact?.contactNumber || 'Not provided'}</div>
-            <div><span className="font-medium">How Did You Hear About Us:</span> {data.emergencyContact?.howDidYouHear || 'Not provided'}</div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Employment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>4. Employment History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div><span className="font-medium">Previously Employed:</span> {data.employmentHistory?.previouslyEmployed || 'Not provided'}</div>
-            
-            {data.employmentHistory?.recentEmployer && (
-              <div>
-                <h4 className="font-semibold mb-3">Most Recent Employer</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><span className="font-medium">Company:</span> {data.employmentHistory.recentEmployer.company || 'Not provided'}</div>
-                  <div><span className="font-medium">Name:</span> {data.employmentHistory.recentEmployer.name || 'Not provided'}</div>
-                  <div><span className="font-medium">Email:</span> {data.employmentHistory.recentEmployer.email || 'Not provided'}</div>
-                  <div><span className="font-medium">Position:</span> {data.employmentHistory.recentEmployer.position || 'Not provided'}</div>
-                  <div><span className="font-medium">Address:</span> {data.employmentHistory.recentEmployer.address || 'Not provided'}</div>
-                  <div><span className="font-medium">Town:</span> {data.employmentHistory.recentEmployer.town || 'Not provided'}</div>
-                  <div><span className="font-medium">Postcode:</span> {data.employmentHistory.recentEmployer.postcode || 'Not provided'}</div>
-                  <div><span className="font-medium">Telephone:</span> {data.employmentHistory.recentEmployer.telephone || 'Not provided'}</div>
-                  <div><span className="font-medium">From:</span> {formatDateDisplay(data.employmentHistory.recentEmployer.from)}</div>
-                  <div><span className="font-medium">To:</span> {formatDateDisplay(data.employmentHistory.recentEmployer.to)}</div>
-                  <div><span className="font-medium">Leaving Date:</span> {formatDateDisplay(data.employmentHistory.recentEmployer.leavingDate)}</div>
-                  <div><span className="font-medium">Reason for Leaving:</span> {data.employmentHistory.recentEmployer.reasonForLeaving || 'Not provided'}</div>
-                </div>
-                {data.employmentHistory.recentEmployer.keyTasks && (
-                  <div className="mt-3">
-                    <span className="font-medium">Key Tasks/Responsibilities:</span>
-                    <p className="mt-1">{data.employmentHistory.recentEmployer.keyTasks}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {data.employmentHistory?.previousEmployers?.length > 0 && (
-              <div>
-                <h4 className="font-semibold mb-3">Previous Employers</h4>
-                {data.employmentHistory.previousEmployers.map((emp: any, index: number) => (
-                  <div key={index} className="border rounded-md p-4 mb-4">
-                    <h5 className="font-medium mb-2">Previous Employer #{index + 1}</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div><span className="font-medium">Company:</span> {emp.company || 'Not provided'}</div>
-                      <div><span className="font-medium">Name:</span> {emp.name || 'Not provided'}</div>
-                      <div><span className="font-medium">Email:</span> {emp.email || 'Not provided'}</div>
-                      <div><span className="font-medium">Position:</span> {emp.position || 'Not provided'}</div>
-                      <div><span className="font-medium">From:</span> {formatDateDisplay(emp.from)}</div>
-                      <div><span className="font-medium">To:</span> {formatDateDisplay(emp.to)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* References */}
-      <Card>
-        <CardHeader>
-          <CardTitle>5. References</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Reference 1 */}
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-semibold">Reference 1</h4>
-                {(refs.reference1 as any)?.email && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onSendReferenceEmail(application, 1)}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Send Email
-                  </Button>
-                )}
-              </div>
-              {refs.reference1 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md">
-                  <div><span className="font-medium">Name:</span> {(refs.reference1 as any).name || 'Not provided'}</div>
-                  <div><span className="font-medium">Company:</span> {(refs.reference1 as any).company || 'Not provided'}</div>
-                  <div><span className="font-medium">Job Title:</span> {(refs.reference1 as any).jobTitle || 'Not provided'}</div>
-                  <div><span className="font-medium">Email:</span> {(refs.reference1 as any).email || 'Not provided'}</div>
-                  <div><span className="font-medium">Contact Number:</span> {(refs.reference1 as any).contactNumber || 'Not provided'}</div>
-                  <div><span className="font-medium">Address:</span> {(refs.reference1 as any).address || 'Not provided'}</div>
-                  <div><span className="font-medium">Town:</span> {(refs.reference1 as any).town || 'Not provided'}</div>
-                  <div><span className="font-medium">Postcode:</span> {(refs.reference1 as any).postcode || 'Not provided'}</div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No reference 1 provided</p>
-              )}
-            </div>
-
-            {/* Reference 2 */}
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-semibold">Reference 2</h4>
-                {(refs.reference2 as any)?.email && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onSendReferenceEmail(application, 2)}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Send Email
-                  </Button>
-                )}
-              </div>
-              {refs.reference2 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md">
-                  <div><span className="font-medium">Name:</span> {(refs.reference2 as any).name || 'Not provided'}</div>
-                  <div><span className="font-medium">Company:</span> {(refs.reference2 as any).company || 'Not provided'}</div>
-                  <div><span className="font-medium">Job Title:</span> {(refs.reference2 as any).jobTitle || 'Not provided'}</div>
-                  <div><span className="font-medium">Email:</span> {(refs.reference2 as any).email || 'Not provided'}</div>
-                  <div><span className="font-medium">Contact Number:</span> {(refs.reference2 as any).contactNumber || 'Not provided'}</div>
-                  <div><span className="font-medium">Address:</span> {(refs.reference2 as any).address || 'Not provided'}</div>
-                  <div><span className="font-medium">Town:</span> {(refs.reference2 as any).town || 'Not provided'}</div>
-                  <div><span className="font-medium">Postcode:</span> {(refs.reference2 as any).postcode || 'Not provided'}</div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No reference 2 provided</p>
-              )}
-            </div>
-
-            {/* Additional employer references if available */}
-            {(refs.hasEmployerRef || refs.hasPreviousRef) && (
-              <div>
-                <h4 className="font-semibold mb-3">Employer References</h4>
-                <div className="flex gap-2">
-                  {refs.hasEmployerRef && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSendReferenceEmail(application, 1)}
-                      className="flex items-center gap-2"
-                    >
-                      <Send className="w-4 h-4" />
-                      Email Recent Employer
-                    </Button>
-                  )}
-                  {refs.hasPreviousRef && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSendReferenceEmail(application, 2)}
-                      className="flex items-center gap-2"
-                    >
-                      <Send className="w-4 h-4" />
-                      Email Previous Employer
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Skills & Experience */}
-      <Card>
-        <CardHeader>
-          <CardTitle>6. Skills & Experience</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.skillsExperience?.skills && Object.keys(data.skillsExperience.skills).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(data.skillsExperience.skills).map(([skill, level]) => (
-                <div key={skill}>
-                  <span className="font-medium">{skill}:</span> {String(level)}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No specific skills listed</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Declaration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>7. Declaration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div><span className="font-medium">Social Service Enquiry:</span> {data.declaration?.socialServiceEnquiry || 'Not provided'}</div>
-            {data.declaration?.socialServiceDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.socialServiceDetails}</div>
-            )}
-            <div><span className="font-medium">Convicted of Offence:</span> {data.declaration?.convictedOfOffence || 'Not provided'}</div>
-            {data.declaration?.convictedDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.convictedDetails}</div>
-            )}
-            <div><span className="font-medium">Safeguarding Investigation:</span> {data.declaration?.safeguardingInvestigation || 'Not provided'}</div>
-            {data.declaration?.safeguardingDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.safeguardingDetails}</div>
-            )}
-            <div><span className="font-medium">Criminal Convictions:</span> {data.declaration?.criminalConvictions || 'Not provided'}</div>
-            {data.declaration?.criminalDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.criminalDetails}</div>
-            )}
-            <div><span className="font-medium">Health Conditions:</span> {data.declaration?.healthConditions || 'Not provided'}</div>
-            {data.declaration?.healthDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.healthDetails}</div>
-            )}
-            <div><span className="font-medium">Cautions / Reprimands:</span> {data.declaration?.cautionsReprimands || 'Not provided'}</div>
-            {data.declaration?.cautionsDetails && (
-              <div><span className="font-medium">Details:</span> {data.declaration.cautionsDetails}</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Terms & Policy */}
-      <Card>
-        <CardHeader>
-          <CardTitle>8. Terms & Policy</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div><span className="font-medium">Consent to Terms:</span> {data.termsPolicy?.consentToTerms ? 'Yes' : 'No'}</div>
-            <div><span className="font-medium">Signature (name):</span> {data.termsPolicy?.signature || 'Not provided'}</div>
-            <div><span className="font-medium">Full Name:</span> {data.termsPolicy?.fullName || 'Not provided'}</div>
-            <div><span className="font-medium">Date:</span> {formatDateDisplay(data.termsPolicy?.date)}</div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
