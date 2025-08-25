@@ -19,6 +19,7 @@ import { DatePickerWithRange, DatePicker } from "@/components/ui/date-picker";
 import { DateRange } from "react-day-picker";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { TimeSlotsList } from "./TimeSlotsList";
+import { ReferenceRequestButtons } from "./ReferenceRequestButtons";
 // Helper function to format dates from YYYY-MM-DD to MM/DD/YYYY
 const formatDateDisplay = (dateString: string | null | undefined): string => {
   if (!dateString) return 'Not provided';
@@ -1641,9 +1642,43 @@ function EditableApplicationContent({
                     value={safeEditData.reference_info?.reference2?.postcode || ''}
                     onChange={(e) => updateReference('reference2', 'postcode', e.target.value)}
                   />
-                </div>
-              </div>
-            </div>
+                 </div>
+               </div>
+               
+               {/* Reference Request Actions */}
+               <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                 <h5 className="font-medium mb-3">Reference Request Actions</h5>
+                 <div className="space-y-3">
+                   {safeEditData.reference_info?.reference1?.name && (
+                     <div>
+                       <p className="text-sm font-medium mb-2">
+                         {safeEditData.reference_info.reference1.name} - {safeEditData.reference_info.reference1.company}
+                       </p>
+                        <ReferenceRequestButtons
+                          application={application}
+                          reference={safeEditData.reference_info.reference1}
+                          referenceType={safeEditData.employment_history?.previouslyEmployed === 'yes' ? 'employer' : 'character'}
+                          applicationId={application.id}
+                        />
+                     </div>
+                   )}
+                   
+                   {safeEditData.reference_info?.reference2?.name && (
+                     <div>
+                       <p className="text-sm font-medium mb-2">
+                         {safeEditData.reference_info.reference2.name} - {safeEditData.reference_info.reference2.company}
+                       </p>
+                        <ReferenceRequestButtons
+                          application={application}
+                          reference={safeEditData.reference_info.reference2}
+                          referenceType={safeEditData.employment_history?.previouslyEmployed === 'yes' ? 'employer' : 'character'}
+                          applicationId={application.id}
+                        />
+                     </div>
+                   )}
+                 </div>
+               </div>
+             </div>
 
             {/* Additional References */}
             <div className="space-y-4">

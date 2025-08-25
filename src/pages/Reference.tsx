@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { ReferenceForm } from '@/components/reference/ReferenceForm';
 
 export default function Reference() {
   const location = useLocation();
@@ -29,30 +30,20 @@ export default function Reference() {
   }, [location.search]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Provide a Job Reference</h1>
       </header>
       <main>
-        <section className="space-y-4">
-          {token ? (
-            <>
-              <p>
-                Thank you for agreeing to provide a reference. This secure link is associated with your request.
-              </p>
-              <p>
-                The reference form will appear here. If you believe you reached this page in error, please contact the requester.
-              </p>
-              <aside className="text-sm opacity-70">
-                Reference token: <code>{token}</code>
-              </aside>
-            </>
-          ) : (
+        {token ? (
+          <ReferenceForm token={token} />
+        ) : (
+          <section className="space-y-4">
             <p>
               Your secure reference link is missing or invalid. Please use the link provided in your email.
             </p>
-          )}
-        </section>
+          </section>
+        )}
       </main>
     </div>
   );

@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.compliance-data-archival]
 verify_jwt = false
+
+[functions.get-reference-request]
+verify_jwt = false
+
+[functions.submit-reference]
+verify_jwt = false
+
+[functions.send-reference-email]
+verify_jwt = true
