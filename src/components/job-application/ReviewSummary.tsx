@@ -22,6 +22,21 @@ export function ReviewSummary({ data }: Props) {
   const dec = data.declaration || ({} as any);
   const tp = data.termsPolicy || ({} as any);
 
+  // Helper function to format date from YYYY-MM-DD to DD-MM-YYYY
+  const formatDateToDDMMYYYY = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'Not provided';
+    
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (error) {
+      return dateString; // Return original if conversion fails
+    }
+  };
+
   // Map time slots to readable labels
   const mappedTimeSlots = av.timeSlots ? mapTimeSlotIds(av.timeSlots, timeSlotMappings) : {};
 
@@ -212,7 +227,7 @@ export function ReviewSummary({ data }: Props) {
           <Field label="Consent to Terms" value={tp.consentToTerms ? 'Yes' : 'No'} />
           <Field label="Signature (name)" value={tp.signature} />
           <Field label="Full Name" value={tp.fullName} />
-          <Field label="Date" value={tp.date} />
+          <Field label="Date" value={formatDateToDDMMYYYY(tp.date)} />
         </div>
       </section>
     </div>
