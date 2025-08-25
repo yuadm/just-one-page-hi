@@ -34,7 +34,7 @@ export function ReviewSummary({ data }: Props) {
           <Field label="English Proficiency" value={pi.englishProficiency} />
           <Field label="Other Languages" value={(pi.otherLanguages || []).join(', ')} />
           <Field label="Position Applied For" value={pi.positionAppliedFor} />
-          <Field label="Which personal care Are you willing to do?" value={pi.personalCareWillingness} />
+          <Field label="Willingness for Personal Care" value={pi.personalCareWillingness} />
           <Field label="DBS" value={pi.hasDBS} />
           <Field label="Car & Licence" value={pi.hasCarAndLicense} />
           <Field label="NI Number" value={pi.nationalInsuranceNumber} />

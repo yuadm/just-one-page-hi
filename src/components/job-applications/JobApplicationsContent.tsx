@@ -1132,7 +1132,7 @@ function EditableApplicationContent({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Which personal care Are you willing to do?</label>
+              <label className="text-sm font-medium text-gray-500">Willingness for Personal Care</label>
               <Select
                 value={safeEditData.personal_info?.personalCareWillingness || ''}
                 onValueChange={(value) => updatePersonalInfo('personalCareWillingness', value)}

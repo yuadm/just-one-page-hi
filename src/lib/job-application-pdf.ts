@@ -328,7 +328,7 @@ addSpacer(ctx, 10)
     ['Proficiency in English (if not first language)', pi.englishProficiency],
     ['Which other languages do you speak?', (pi.otherLanguages || []).join(', ')],
     ['Position applied for', pi.positionAppliedFor],
-    ['Which personal care Are you willing to do?', pi.personalCareWillingness],
+    ['Are you willing to do personal care for?', pi.personalCareWillingness],
     ['Do you have a recent or updated DBS?', pi.hasDBS],
     ['National Insurance Number', pi.nationalInsuranceNumber],
     ['Do you currently have your own car and licence?', pi.hasCarAndLicense],
