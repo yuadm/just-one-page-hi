@@ -240,9 +240,28 @@ function renderTwoColGrid(ctx: WriterCtx, pairs: Array<[string, string | undefin
     ctx.y -= rowHeight + rowGap
   }
 }
+// Helper to embed image (PNG/JPG) from URL
+async function embedImageFromUrl(doc: PDFDocument, url: string) {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Failed to fetch logo: ${res.status}`)
+    const contentType = res.headers.get('content-type') || ''
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    if (/png/i.test(contentType) || /\.png(\?|$)/i.test(url)) {
+      return await doc.embedPng(bytes as any)
+    }
+    return await doc.embedJpg(bytes as any)
+  } catch (e) {
+    console.warn('Logo embedding failed:', e)
+    return undefined
+  }
+}
 
-
-export async function generateJobApplicationPdf(data: JobApplicationData) {
+export async function generateJobApplicationPdf(
+  data: JobApplicationData,
+  options?: { logoUrl?: string; companyName?: string }
+) {
   const doc = await PDFDocument.create()
   const page = doc.addPage()
   const font = await doc.embedFont(StandardFonts.Helvetica)
@@ -261,13 +280,28 @@ export async function generateJobApplicationPdf(data: JobApplicationData) {
     blueColor: { r: 0.2, g: 0.4, b: 0.8 },
   }
 
-  // Header with logo placeholder
-  drawText(ctx, 'Job Application Summary', { bold: true, size: 16 })
-  addSpacer(ctx, 6)
-  drawText(ctx, `Applicant: ${data.personalInfo?.fullName ?? ''}`)
-  drawText(ctx, `Position Applied For: ${data.personalInfo?.positionAppliedFor ?? ''}`)
-  drawText(ctx, `Generated: ${formatDateDDMMYYYY(new Date().toISOString())}`)
-  addSpacer(ctx, 10)
+// Header with optional company logo
+if (options?.logoUrl) {
+  const img = await embedImageFromUrl(doc, options.logoUrl)
+  if (img) {
+    const maxW = 140
+    const maxH = 60
+    const scale = Math.min(maxW / img.width, maxH / img.height, 1)
+    const dw = img.width * scale
+    const dh = img.height * scale
+    const x = (page.getWidth() - dw) / 2
+    const y = page.getHeight() - ctx.margin - dh
+    page.drawImage(img, { x, y, width: dw, height: dh })
+    ctx.y = y - 10
+  }
+}
+
+drawText(ctx, 'Job Application Summary', { bold: true, size: 16 })
+addSpacer(ctx, 6)
+drawText(ctx, `Applicant: ${data.personalInfo?.fullName ?? ''}`)
+drawText(ctx, `Position Applied For: ${data.personalInfo?.positionAppliedFor ?? ''}`)
+drawText(ctx, `Generated: ${formatDateDDMMYYYY(new Date().toISOString())}`)
+addSpacer(ctx, 10)
 
   // Personal Information
   addSectionTitle(ctx, '1. Personal Information')

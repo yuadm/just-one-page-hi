@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Search, Eye, FileText, Edit, Trash2, Send, ArrowUpDown, ArrowUp, ArrowDown, Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCompany } from "@/contexts/CompanyContext";
 import { generateJobApplicationPdf } from "@/lib/job-application-pdf";
 import { ReviewSummary } from "@/components/job-application/ReviewSummary";
 import { DatePickerWithRange, DatePicker } from "@/components/ui/date-picker";
@@ -67,10 +68,11 @@ export function JobApplicationsContent() {
   const [pageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [statusOptions, setStatusOptions] = useState<string[]>(['new','reviewing','interviewed','accepted','rejected']);
-  const { toast } = useToast();
-  useEffect(() => {
-    fetchStatusOptions();
-  }, []);
+const { toast } = useToast();
+const { companySettings } = useCompany();
+useEffect(() => {
+  fetchStatusOptions();
+}, []);
 
   useEffect(() => {
     setLoading(true);
@@ -659,8 +661,11 @@ function ApplicationDetails({
   };
 
   const downloadApplication = async () => {
-    try {
-      await generateJobApplicationPdf(toJobAppData() as any);
+try {
+      await generateJobApplicationPdf(toJobAppData() as any, {
+        logoUrl: companySettings.logo,
+        companyName: companySettings.name,
+      });
       toast({
         title: "PDF Generated",
         description: "The application has been downloaded as a PDF.",

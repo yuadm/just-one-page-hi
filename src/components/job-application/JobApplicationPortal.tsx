@@ -132,9 +132,12 @@ function JobApplicationPortalContent() {
     setFormData(prev => ({ ...prev, termsPolicy: { ...prev.termsPolicy, [field]: value } }));
   };
 
-  const handleDownloadPdf = async () => {
+const handleDownloadPdf = async () => {
     try {
-      await generateJobApplicationPdf(formData);
+      await generateJobApplicationPdf(formData, {
+        logoUrl: companySettings.logo,
+        companyName: companySettings.name,
+      });
     } catch (err) {
       console.error('PDF generation failed', err);
       toast({ title: 'PDF Error', description: 'Failed to generate PDF. Please try again.', variant: 'destructive' });
