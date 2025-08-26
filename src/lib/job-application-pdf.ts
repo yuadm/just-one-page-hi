@@ -293,43 +293,88 @@ export async function generateJobApplicationPdf(
     blueColor: { r: 0.2, g: 0.4, b: 0.8 },
   }
 
-// Header with company logo and name
+// Header with company logo and name (matching supervision/spot check style)
 let headerHeight = 0
 if (options?.logoUrl || options?.companyName) {
-  const headerY = page.getHeight() - ctx.margin
+  headerHeight = options?.logoUrl ? 120 : 100
   
+  // Header background
+  page.drawRectangle({ 
+    x: 0, 
+    y: page.getHeight() - headerHeight, 
+    width: page.getWidth(), 
+    height: headerHeight, 
+    color: rgb(0.98, 0.98, 0.985) 
+  })
+  
+  const centerX = page.getWidth() / 2
+  let cursorY = page.getHeight() - 16
+  
+  // Logo (centered)
   if (options?.logoUrl) {
     const img = await embedImageFromUrl(doc, options.logoUrl)
     if (img) {
-      const maxW = 120
-      const maxH = 50
-      const scale = Math.min(maxW / img.width, maxH / img.height, 1)
-      const dw = img.width * scale
-      const dh = img.height * scale
-      const logoX = ctx.margin
-      const logoY = headerY - dh
-      page.drawImage(img, { x: logoX, y: logoY, width: dw, height: dh })
-      headerHeight = Math.max(headerHeight, dh)
+      const logoW = 56
+      const logoH = (img.height / img.width) * logoW
+      const logoX = centerX - logoW / 2
+      const logoY = page.getHeight() - headerHeight + headerHeight - logoH - 8
+      page.drawImage(img, { x: logoX, y: logoY, width: logoW, height: logoH })
+      cursorY = logoY - 6
     }
   }
   
+  // Company name (centered)
   if (options?.companyName) {
-    const companyNameSize = 18
-    const companyY = headerY - companyNameSize
+    const companySize = 13
+    const companyWidth = boldFont.widthOfTextAtSize(options.companyName, companySize)
     page.drawText(options.companyName, {
-      x: options?.logoUrl ? ctx.margin + 130 : ctx.margin,
-      y: companyY,
-      size: companyNameSize,
+      x: centerX - companyWidth / 2,
+      y: cursorY - companySize,
+      size: companySize,
       font: boldFont,
-      color: rgb(0.2, 0.4, 0.8),
+      color: rgb(0, 0, 0),
     })
-    headerHeight = Math.max(headerHeight, companyNameSize + 5)
+    cursorY -= companySize + 2
   }
   
-  ctx.y = headerY - headerHeight - 20
+  // Report title (centered)
+  const title = 'Job Application Summary'
+  const titleSize = 12
+  const titleWidth = boldFont.widthOfTextAtSize(title, titleSize)
+  page.drawText(title, {
+    x: centerX - titleWidth / 2,
+    y: cursorY - titleSize - 2,
+    size: titleSize,
+    font: boldFont,
+    color: rgb(0, 0, 0),
+  })
+  cursorY -= titleSize + 8
+  
+  // Date (centered)
+  const dateText = new Date().toLocaleDateString()
+  const dateSize = 11
+  const dateWidth = font.widthOfTextAtSize(dateText, dateSize)
+  page.drawText(dateText, {
+    x: centerX - dateWidth / 2,
+    y: cursorY - dateSize,
+    size: dateSize,
+    font,
+    color: rgb(0.6, 0.6, 0.6),
+  })
+  
+  // Divider
+  page.drawRectangle({
+    x: ctx.margin,
+    y: page.getHeight() - headerHeight - 1,
+    width: page.getWidth() - ctx.margin * 2,
+    height: 1,
+    color: rgb(0.85, 0.85, 0.85),
+  })
+  
+  ctx.y = page.getHeight() - headerHeight - 20
+} else {
+  drawText(ctx, 'Job Application Summary', { bold: true, size: 16 })
 }
-
-drawText(ctx, 'Job Application Summary', { bold: true, size: 16 })
 addSpacer(ctx, 10)
 
   // Personal Information

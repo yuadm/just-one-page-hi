@@ -66,28 +66,54 @@ export const generateReferencePDF = (
     return y + (lines.length * lineHeight);
   };
 
-  // Header with company logo and name
+  // Header with company logo and name (matching supervision/spot check style)
   if (options?.logoUrl || options?.companyName) {
-    let headerHeight = 0;
-    const headerY = yPosition;
+    const headerHeight = 100
     
+    // Header background
+    pdf.setFillColor(250, 250, 251) // Light gray background
+    pdf.rect(0, pdf.internal.pageSize.height - headerHeight, pdf.internal.pageSize.width, headerHeight, 'F')
+    
+    const centerX = pageWidth / 2
+    let cursorY = pdf.internal.pageSize.height - 16
+    
+    // Company name (centered)
     if (options?.companyName) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      pdf.setTextColor(51, 102, 204); // Blue color
-      pdf.text(options.companyName, margin, yPosition);
-      headerHeight = Math.max(headerHeight, 20);
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(13)
+      pdf.setTextColor(0, 0, 0) // Black color
+      const companyWidth = pdf.getTextWidth(options.companyName)
+      pdf.text(options.companyName, centerX - companyWidth / 2, cursorY - 13)
+      cursorY -= 15
     }
     
-    yPosition += headerHeight + 10;
+    // Report title (centered)
+    const title = reference.reference_type === 'employer' ? 'Employment Reference Report' : 'Character Reference Report'
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(12)
+    pdf.setTextColor(0, 0, 0) // Black color
+    const titleWidth = pdf.getTextWidth(title)
+    pdf.text(title, centerX - titleWidth / 2, cursorY - 12)
+    cursorY -= 20
+    
+    // Date (centered)
+    const dateText = new Date().toLocaleDateString()
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(11)
+    pdf.setTextColor(153, 153, 153) // Gray color
+    const dateWidth = pdf.getTextWidth(dateText)
+    pdf.text(dateText, centerX - dateWidth / 2, cursorY - 11)
+    
+    // Divider line
+    pdf.setDrawColor(217, 217, 217)
+    pdf.setLineWidth(0.5)
+    pdf.line(margin, pdf.internal.pageSize.height - headerHeight - 1, pageWidth - margin, pdf.internal.pageSize.height - headerHeight - 1)
+    
+    yPosition = pdf.internal.pageSize.height - headerHeight - 20
+    
+    // Reset colors for content
+    pdf.setTextColor(0, 0, 0)
   }
-
-  // Header
-  pdf.setFontSize(18);
-  pdf.setFont('helvetica', 'bold');
-  const referenceType = reference.reference_type === 'employer' ? 'Employment reference for' : 'Character reference for';
-  pdf.text(referenceType, pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 15;
 
   // Applicant Information
   pdf.setFontSize(12);
@@ -290,73 +316,54 @@ export const generateManualReferencePDF = (data: ManualReferenceInput, options?:
   const lineHeight = 7;
   let y = 30;
 
-  // Helper function to embed image (PNG/JPG) from URL
-  const embedImageFromUrl = async (url: string) => {
-    try {
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`Failed to fetch logo: ${res.status}`)
-      const contentType = res.headers.get('content-type') || ''
-      const buf = await res.arrayBuffer()
-      const bytes = new Uint8Array(buf)
-      // For jsPDF, we need to convert to base64
-      const base64 = btoa(String.fromCharCode(...bytes))
-      const dataUrl = `data:${contentType};base64,${base64}`
-      return dataUrl
-    } catch (e) {
-      console.warn('Logo embedding failed:', e)
-      return undefined
-    }
-  }
-
-  // Header with company logo and name
-  const addHeader = async () => {
-    if (options?.logoUrl || options?.companyName) {
-      let headerHeight = 0
-      const headerY = y
-      
-      if (options?.logoUrl) {
-        try {
-          const logoDataUrl = await embedImageFromUrl(options.logoUrl)
-          if (logoDataUrl) {
-            const maxW = 40
-            const maxH = 25
-            pdf.addImage(logoDataUrl, 'JPEG', margin, y, maxW, maxH)
-            headerHeight = Math.max(headerHeight, maxH)
-          }
-        } catch (e) {
-          console.warn('Failed to add logo to PDF:', e)
-        }
-      }
-      
-      if (options?.companyName) {
-        pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(16)
-        pdf.setTextColor(51, 102, 204) // Blue color
-        pdf.text(options.companyName, options?.logoUrl ? margin + 45 : margin, y + 15)
-        headerHeight = Math.max(headerHeight, 20)
-      }
-      
-      y += headerHeight + 10
-    }
-  };
-
-  // Add header first (but we need to make it sync for jsPDF)
-  if (options?.logoUrl) {
-    // For jsPDF, we'll handle images differently - skip async for now
-    // Just add company name if provided
+  // Header with company logo and name (matching supervision/spot check style)
+  if (options?.logoUrl || options?.companyName) {
+    const headerHeight = 100 // Fixed height for consistency
+    
+    // Header background
+    pdf.setFillColor(250, 250, 251) // Light gray background
+    pdf.rect(0, pdf.internal.pageSize.height - headerHeight, pdf.internal.pageSize.width, headerHeight, 'F')
+    
+    const centerX = pageWidth / 2
+    let cursorY = pdf.internal.pageSize.height - 16
+    
+    // Company name (centered)
     if (options?.companyName) {
       pdf.setFont('helvetica', 'bold')
-      pdf.setFontSize(16)
-      pdf.setTextColor(51, 102, 204) // Blue color
-      pdf.text(options.companyName, margin, y)
-      y += 25
+      pdf.setFontSize(13)
+      pdf.setTextColor(0, 0, 0) // Black color
+      const companyWidth = pdf.getTextWidth(options.companyName)
+      pdf.text(options.companyName, centerX - companyWidth / 2, cursorY - 13)
+      cursorY -= 15
     }
-  } else if (options?.companyName) {
+    
+    // Report title (centered)
+    const title = data.referenceType === 'employer' ? 'Employment Reference Form' : 'Character Reference Form'
     pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(16)
-    pdf.setTextColor(51, 102, 204) // Blue color
-    pdf.text(options.companyName, margin, y)
-    y += 25
+    pdf.setFontSize(12)
+    pdf.setTextColor(0, 0, 0) // Black color
+    const titleWidth = pdf.getTextWidth(title)
+    pdf.text(title, centerX - titleWidth / 2, cursorY - 12)
+    cursorY -= 20
+    
+    // Date (centered)
+    const dateText = new Date().toLocaleDateString()
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(11)
+    pdf.setTextColor(153, 153, 153) // Gray color
+    const dateWidth = pdf.getTextWidth(dateText)
+    pdf.text(dateText, centerX - dateWidth / 2, cursorY - 11)
+    
+    // Divider line
+    pdf.setDrawColor(217, 217, 217)
+    pdf.setLineWidth(0.5)
+    pdf.line(margin, pdf.internal.pageSize.height - headerHeight - 1, pageWidth - margin, pdf.internal.pageSize.height - headerHeight - 1)
+    
+    y = pdf.internal.pageSize.height - headerHeight - 20
+    
+    // Reset colors for content
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFont('helvetica', 'normal')
   }
 
   const addWrappedText = (text: string, size = 11) => {
@@ -411,9 +418,11 @@ export const generateManualReferencePDF = (data: ManualReferenceInput, options?:
     }
   };
 
-  // Header
-  const referenceTitle = data.referenceType === 'employer' ? 'Employment reference for' : 'Character reference for';
-  addTitle(referenceTitle);
+  // Basic Information (only show if no header was added)
+  if (!options?.logoUrl && !options?.companyName) {
+    const referenceTitle = data.referenceType === 'employer' ? 'Employment reference for' : 'Character reference for';
+    addTitle(referenceTitle);
+  }
   
   // Basic Information
   pdf.setFontSize(12);
