@@ -142,24 +142,36 @@ const handler = async (req: Request): Promise<Response> => {
       .insert({
         id: crypto.randomUUID(),
         application_id: applicationId,
-        applicant_name: applicantName,
-        applicant_first_name: applicantFirstName,
-        applicant_address: applicantAddress,
-        applicant_postcode: applicantPostcode,
-        position_applied_for: roleTitle,
+        applicant_name: applicantName || 'Unknown Applicant',
+        applicant_first_name: applicantFirstName || (applicantName?.split(' ')[0] || 'Applicant'),
+        applicant_address: applicantAddress || '',
+        applicant_postcode: applicantPostcode || '',
+        position_applied_for: roleTitle || 'Support Worker/Carer',
         reference_email: referenceEmail,
-        reference_name: referenceName,
-        reference_company: referenceCompany || employmentDetails?.company,
-        reference_address: referenceAddress,
+        reference_name: referenceName || referenceEmail,
+        reference_company: referenceCompany || employmentDetails?.company || '',
+        reference_address: referenceAddress || '',
         company_name: safeCompanyName,
         reference_type: referenceType,
         reference_token: referenceToken,
         status: 'pending',
         expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
+        is_expired: false,
         reference_data: {
-          company: referenceCompany,
-          address: referenceAddress,
-          employmentDetails: employmentDetails
+          applicant: {
+            name: applicantName,
+            firstName: applicantFirstName,
+            address: applicantAddress,
+            postcode: applicantPostcode,
+            positionAppliedFor: roleTitle,
+          },
+          reference: {
+            name: referenceName,
+            email: referenceEmail,
+            company: referenceCompany,
+            address: referenceAddress,
+          },
+          employmentDetails: employmentDetails || null
         }
       })
       .select()
