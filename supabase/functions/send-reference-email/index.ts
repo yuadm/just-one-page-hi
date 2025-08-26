@@ -54,12 +54,12 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use the correct frontend URL for reference links
-    const frontendUrl = "https://24ba8d66-4a7c-4a5f-8dcb-9a5f31af5bff.sandbox.lovable.dev";
+    // Derive site origin from request for building public URL
+    const siteOrigin = req.headers.get("origin") || `${new URL(req.url).protocol}//${new URL(req.url).host}`;
     const referenceToken = crypto.randomUUID();
     const safeCompanyName = companyName && companyName.trim().length > 0 ? companyName : 'Your Company Name';
     const roleTitle = positionAppliedFor && positionAppliedFor.trim().length > 0 ? positionAppliedFor : 'Support Worker/Carer';
-    const referenceLink = `${frontendUrl}/reference?token=${referenceToken}`;
+    const referenceLink = `${siteOrigin}/reference?token=${referenceToken}`;
 
     console.log("Sending reference email to:", referenceEmail, "for applicant:", applicantName);
 
