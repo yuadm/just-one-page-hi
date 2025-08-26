@@ -15,15 +15,16 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
   const { toast } = useToast();
   const [sending, setSending] = useState<string | null>(null);
 
-  const getReferenceType = (reference: any) => {
-    return reference?.referenceType || 'employer';
+  const determineReferenceType = (application: any) => {
+    const hasEmployment = application.employment_history?.previouslyEmployed === 'yes';
+    return hasEmployment ? 'employer' : 'character';
   };
 
   const sendReferenceEmail = async (referenceKey: string, reference: any) => {
     setSending(referenceKey);
     
     try {
-      const referenceType = getReferenceType(reference);
+      const referenceType = determineReferenceType(application);
       const personalInfo = application.personal_info || {};
       
       const emailData = {
@@ -39,15 +40,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
         referenceAddress: `${reference.address || ''}, ${reference.town || ''}`,
         companyName: 'Your Company',
         referenceType: referenceType,
-        employmentDetails: reference.referenceType === 'employer' ? {
-          from: reference.employmentFrom,
-          to: reference.employmentTo,
-          position: reference.employmentPosition
-        } : null,
-        characterDetails: reference.referenceType === 'character' ? {
-          relationshipType: reference.relationshipType,
-          knownDuration: reference.knownDuration
-        } : null
+        employmentDetails: application.employment_history?.recentEmployer
       };
 
       const { error } = await supabase.functions.invoke('send-reference-email', {
@@ -96,7 +89,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
             <div className="text-sm text-muted-foreground">{references.reference1.company}</div>
             <div className="text-sm text-muted-foreground">{references.reference1.email}</div>
             <Badge variant="outline" className="mt-1">
-              {getReferenceType(references.reference1) === 'employer' ? 'Employer Reference' : 'Character Reference'}
+              {determineReferenceType(application) === 'employer' ? 'Employer Reference' : 'Character Reference'}
             </Badge>
           </div>
           <div className="flex gap-2">
@@ -137,7 +130,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
             <div className="text-sm text-muted-foreground">{references.reference2.company}</div>
             <div className="text-sm text-muted-foreground">{references.reference2.email}</div>
             <Badge variant="outline" className="mt-1">
-              {getReferenceType(references.reference2) === 'employer' ? 'Employer Reference' : 'Character Reference'}
+              {determineReferenceType(application) === 'employer' ? 'Employer Reference' : 'Character Reference'}
             </Badge>
           </div>
           <div className="flex gap-2">

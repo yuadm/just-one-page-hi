@@ -55,11 +55,9 @@ const initialFormData: JobApplicationData = {
   },
   references: {
     reference1: {
-      referenceType: 'employer' as const,
       name: '', company: '', jobTitle: '', email: '', address: '', address2: '', town: '', contactNumber: '', postcode: ''
     },
     reference2: {
-      referenceType: 'employer' as const,
       name: '', company: '', jobTitle: '', email: '', address: '', address2: '', town: '', contactNumber: '', postcode: ''
     }
   },

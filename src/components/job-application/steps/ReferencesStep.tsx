@@ -2,7 +2,6 @@ import { References, EmploymentHistory } from '../types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ReferencesStepProps {
   data: References;
@@ -15,50 +14,23 @@ export function ReferencesStep({ data, employmentHistory, updateData }: Referenc
     updateData(refNumber, { ...data[refNumber], [field]: value });
   };
 
-  const updateReferenceType = (refNumber: 'reference1' | 'reference2', type: 'employer' | 'character') => {
-    const currentRef = data[refNumber] || {};
-    // Clear type-specific fields when changing type
-    const clearedRef = {
-      ...currentRef,
-      referenceType: type,
-      employmentFrom: undefined,
-      employmentTo: undefined,
-      employmentPosition: undefined,
-      relationshipType: undefined,
-      knownDuration: undefined,
-    };
-    updateData(refNumber, clearedRef);
-  };
+  const isEmployed = employmentHistory.previouslyEmployed === 'yes';
+  const referenceType = isEmployed ? 'Reference' : 'Character Reference';
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">References</h3>
         <p className="text-muted-foreground mb-6">
-          Please provide two references. You can choose employer references or character references for each one.
+          Please provide two {isEmployed ? 'professional references' : 'character references'}.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Reference 1 ** All fields are required</CardTitle>
+          <CardTitle>{referenceType} 1 ** All fields are required</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>Reference Type *</Label>
-            <Select 
-              value={data.reference1?.referenceType || 'employer'} 
-              onValueChange={(value: 'employer' | 'character') => updateReferenceType('reference1', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select reference type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="employer">Employer Reference</SelectItem>
-                <SelectItem value="character">Character Reference</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Name *</Label>
@@ -146,95 +118,14 @@ export function ReferencesStep({ data, employmentHistory, updateData }: Referenc
               />
             </div>
           </div>
-          
-          {/* Type-specific fields */}
-          {data.reference1?.referenceType === 'employer' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <Label>Employment From *</Label>
-                <Input
-                  type="date"
-                  value={data.reference1?.employmentFrom || ''}
-                  onChange={(e) => updateReference('reference1', 'employmentFrom', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Employment To *</Label>
-                <Input
-                  type="date"
-                  value={data.reference1?.employmentTo || ''}
-                  onChange={(e) => updateReference('reference1', 'employmentTo', e.target.value)}
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Position Held *</Label>
-                <Input
-                  value={data.reference1?.employmentPosition || ''}
-                  onChange={(e) => updateReference('reference1', 'employmentPosition', e.target.value)}
-                  placeholder="Position held during employment"
-                  required
-                />
-              </div>
-            </div>
-          )}
-          
-          {data.reference1?.referenceType === 'character' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <Label>Relationship Type *</Label>
-                <Select 
-                  value={data.reference1?.relationshipType || ''} 
-                  onValueChange={(value) => updateReference('reference1', 'relationshipType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select relationship" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="friend">Friend</SelectItem>
-                    <SelectItem value="family_friend">Family Friend</SelectItem>
-                    <SelectItem value="mentor">Mentor</SelectItem>
-                    <SelectItem value="community_leader">Community Leader</SelectItem>
-                    <SelectItem value="teacher">Teacher/Instructor</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>How long have you known this person? *</Label>
-                <Input
-                  value={data.reference1?.knownDuration || ''}
-                  onChange={(e) => updateReference('reference1', 'knownDuration', e.target.value)}
-                  placeholder="e.g., 5 years, 2 months"
-                  required
-                />
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Reference 2 ** All fields are required</CardTitle>
+          <CardTitle>{referenceType} 2 ** All fields are required</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>Reference Type *</Label>
-            <Select 
-              value={data.reference2?.referenceType || 'employer'} 
-              onValueChange={(value: 'employer' | 'character') => updateReferenceType('reference2', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select reference type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="employer">Employer Reference</SelectItem>
-                <SelectItem value="character">Character Reference</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Name *</Label>
@@ -322,72 +213,6 @@ export function ReferencesStep({ data, employmentHistory, updateData }: Referenc
               />
             </div>
           </div>
-          
-          {/* Type-specific fields */}
-          {data.reference2?.referenceType === 'employer' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <Label>Employment From *</Label>
-                <Input
-                  type="date"
-                  value={data.reference2?.employmentFrom || ''}
-                  onChange={(e) => updateReference('reference2', 'employmentFrom', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Employment To *</Label>
-                <Input
-                  type="date"
-                  value={data.reference2?.employmentTo || ''}
-                  onChange={(e) => updateReference('reference2', 'employmentTo', e.target.value)}
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Position Held *</Label>
-                <Input
-                  value={data.reference2?.employmentPosition || ''}
-                  onChange={(e) => updateReference('reference2', 'employmentPosition', e.target.value)}
-                  placeholder="Position held during employment"
-                  required
-                />
-              </div>
-            </div>
-          )}
-          
-          {data.reference2?.referenceType === 'character' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <Label>Relationship Type *</Label>
-                <Select 
-                  value={data.reference2?.relationshipType || ''} 
-                  onValueChange={(value) => updateReference('reference2', 'relationshipType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select relationship" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="friend">Friend</SelectItem>
-                    <SelectItem value="family_friend">Family Friend</SelectItem>
-                    <SelectItem value="mentor">Mentor</SelectItem>
-                    <SelectItem value="community_leader">Community Leader</SelectItem>
-                    <SelectItem value="teacher">Teacher/Instructor</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>How long have you known this person? *</Label>
-                <Input
-                  value={data.reference2?.knownDuration || ''}
-                  onChange={(e) => updateReference('reference2', 'knownDuration', e.target.value)}
-                  placeholder="e.g., 5 years, 2 months"
-                  required
-                />
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

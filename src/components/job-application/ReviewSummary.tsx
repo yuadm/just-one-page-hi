@@ -168,40 +168,16 @@ export function ReviewSummary({ data }: Props) {
           {refs
             .filter((r) => r && (r.name || r.company || r.email))
             .map((ref, idx) => (
-              <div key={idx} className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium">Reference {idx + 1}</h4>
-                  <span className="px-2 py-1 text-xs bg-muted rounded">
-                    {ref.referenceType === 'employer' ? 'Employer Reference' : 'Character Reference'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Name" value={ref.name} />
-                  <Field label="Company" value={ref.company} />
-                  <Field label="Job Title" value={ref.jobTitle} />
-                  <Field label="Email" value={ref.email} />
-                  <Field label="Contact Number" value={ref.contactNumber} />
-                  <Field label="Address 1" value={ref.address} />
-                  <Field label="Address 2" value={ref.address2} />
-                  <Field label="Town" value={ref.town} />
-                  <Field label="Postcode" value={ref.postcode} />
-                  
-                  {/* Type-specific fields */}
-                  {ref.referenceType === 'employer' && (
-                    <>
-                      <Field label="Employment From" value={ref.employmentFrom} />
-                      <Field label="Employment To" value={ref.employmentTo} />
-                      <Field label="Position Held" value={ref.employmentPosition} />
-                    </>
-                  )}
-                  
-                  {ref.referenceType === 'character' && (
-                    <>
-                      <Field label="Relationship" value={ref.relationshipType} />
-                      <Field label="Known Duration" value={ref.knownDuration} />
-                    </>
-                  )}
-                </div>
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Name" value={ref.name} />
+                <Field label="Company" value={ref.company} />
+                <Field label="Job Title" value={ref.jobTitle} />
+                <Field label="Email" value={ref.email} />
+                <Field label="Contact Number" value={ref.contactNumber} />
+                <Field label="Address 1" value={ref.address} />
+                <Field label="Address 2" value={ref.address2} />
+                <Field label="Town" value={ref.town} />
+                <Field label="Postcode" value={ref.postcode} />
               </div>
             ))}
         </div>

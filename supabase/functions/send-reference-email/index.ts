@@ -33,6 +33,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const requestBody = await req.json();
+    console.log("Starting send-reference-email function with data:", requestBody);
+
     const { 
       applicationId,
       applicantName,
@@ -47,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
       companyName,
       referenceType,
       employmentDetails
-    }: ReferenceEmailRequest = await req.json();
+    }: ReferenceEmailRequest = requestBody;
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -132,7 +135,9 @@ const handler = async (req: Request): Promise<Response> => {
 
 
     const apiKey = Deno.env.get("BREVO_API_KEY");
+    console.log("BREVO_API_KEY exists:", !!apiKey);
     if (!apiKey) {
+      console.error("BREVO_API_KEY environment variable is not set");
       throw new Error("BREVO_API_KEY environment variable is not set");
     }
 
@@ -141,15 +146,8 @@ const handler = async (req: Request): Promise<Response> => {
       .from('reference_requests')
       .insert({
         application_id: applicationId,
-        applicant_name: applicantName,
-        applicant_address: applicantAddress,
-        applicant_postcode: applicantPostcode,
-        position_applied_for: positionAppliedFor,
         reference_email: referenceEmail,
         reference_name: referenceName,
-        reference_company: referenceCompany,
-        reference_address: referenceAddress,
-        company_name: safeCompanyName,
         reference_type: referenceType,
         token: referenceToken,
         reference_data: {
