@@ -14,21 +14,60 @@ export function ReferencesStep({ data, employmentHistory, updateData }: Referenc
     updateData(refNumber, { ...data[refNumber], [field]: value });
   };
 
-  const isEmployed = employmentHistory.previouslyEmployed === 'yes';
-  const referenceType = isEmployed ? 'Reference' : 'Character Reference';
+  // Count employers to determine reference types
+  const countEmployers = () => {
+    let count = 0;
+    
+    // Count recent employer if present
+    if (employmentHistory.recentEmployer?.company?.trim() || employmentHistory.recentEmployer?.name?.trim()) {
+      count += 1;
+    }
+    
+    // Count previous employers
+    if (employmentHistory.previousEmployers?.length) {
+      count += employmentHistory.previousEmployers.filter(emp => 
+        emp.company?.trim() || emp.name?.trim()
+      ).length;
+    }
+    
+    return count;
+  };
+
+  const employerCount = countEmployers();
+  
+  // Determine reference types based on employer count
+  const getReferenceType = (refNumber: 'reference1' | 'reference2') => {
+    if (employerCount >= 2) {
+      return 'Employer Reference';
+    } else if (employerCount === 1) {
+      return refNumber === 'reference1' ? 'Employer Reference' : 'Character Reference';
+    } else {
+      return 'Character Reference';
+    }
+  };
+
+  const getHelperText = () => {
+    if (employerCount >= 2) {
+      return 'Please provide two professional references from previous employers.';
+    } else if (employerCount === 1) {
+      return 'Please provide one professional reference from your previous employer and one character reference.';
+    } else {
+      return 'Please provide two character references.';
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">References</h3>
         <p className="text-muted-foreground mb-6">
-          Please provide two {isEmployed ? 'professional references' : 'character references'}.
+          {getHelperText()}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{referenceType} 1 ** All fields are required</CardTitle>
+          <CardTitle>{getReferenceType('reference1')} 1 ** All fields are required</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,7 +162,7 @@ export function ReferencesStep({ data, employmentHistory, updateData }: Referenc
 
       <Card>
         <CardHeader>
-          <CardTitle>{referenceType} 2 ** All fields are required</CardTitle>
+          <CardTitle>{getReferenceType('reference2')} 2 ** All fields are required</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

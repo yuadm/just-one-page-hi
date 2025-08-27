@@ -39,16 +39,46 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
     }
   };
 
-  const determineReferenceType = (application: any) => {
-    const hasEmployment = application.employment_history?.previouslyEmployed === 'yes';
-    return hasEmployment ? 'employer' : 'character';
+  // Count employers to determine reference types
+  const countEmployers = (application: any) => {
+    let count = 0;
+    const employmentHistory = application.employment_history;
+    
+    if (!employmentHistory) return 0;
+    
+    // Count recent employer if present
+    if (employmentHistory.recentEmployer?.company?.trim() || employmentHistory.recentEmployer?.name?.trim()) {
+      count += 1;
+    }
+    
+    // Count previous employers
+    if (employmentHistory.previousEmployers?.length) {
+      count += employmentHistory.previousEmployers.filter((emp: any) => 
+        emp.company?.trim() || emp.name?.trim()
+      ).length;
+    }
+    
+    return count;
+  };
+
+  // Determine reference type for specific reference
+  const referenceTypeForKey = (application: any, referenceKey: 'reference1' | 'reference2') => {
+    const employerCount = countEmployers(application);
+    
+    if (employerCount >= 2) {
+      return 'employer';
+    } else if (employerCount === 1) {
+      return referenceKey === 'reference1' ? 'employer' : 'character';
+    } else {
+      return 'character';
+    }
   };
 
   const sendReferenceEmail = async (referenceKey: string, reference: any) => {
     setSending(referenceKey);
     
     try {
-      const referenceType = determineReferenceType(application);
+      const referenceType = referenceTypeForKey(application, referenceKey as 'reference1' | 'reference2');
       const personalInfo = application.personal_info || {};
       
       const emailData = {
@@ -123,7 +153,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
     try {
       const personalInfo = application.personal_info || {};
       const applicantName = personalInfo.fullName || 'Unknown Applicant';
-      const refType = determineReferenceType(application);
+      const refType = referenceTypeForKey(application, referenceKey as 'reference1' | 'reference2');
 
       const pdf = generateManualReferencePDF({
         applicantName,
@@ -188,7 +218,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
               <div className="text-sm text-muted-foreground">{references.reference1.email}</div>
               <div className="flex gap-2 mt-1">
                 <Badge variant="outline">
-                  {determineReferenceType(application) === 'employer' ? 'Employer Reference' : 'Character Reference'}
+                  {referenceTypeForKey(application, 'reference1') === 'employer' ? 'Employer Reference' : 'Character Reference'}
                 </Badge>
                 {completedRef && (
                   <Badge variant="default" className="bg-green-100 text-green-800">
@@ -265,7 +295,7 @@ export function ReferenceButtons({ application, references, onUpdate }: Referenc
               <div className="text-sm text-muted-foreground">{references.reference2.email}</div>
               <div className="flex gap-2 mt-1">
                 <Badge variant="outline">
-                  {determineReferenceType(application) === 'employer' ? 'Employer Reference' : 'Character Reference'}
+                  {referenceTypeForKey(application, 'reference2') === 'employer' ? 'Employer Reference' : 'Character Reference'}
                 </Badge>
                 {completedRef && (
                   <Badge variant="default" className="bg-green-100 text-green-800">
