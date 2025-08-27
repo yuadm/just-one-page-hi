@@ -77,79 +77,75 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
     }
   }, [token]);
 
-  const fetchReferenceRequest = async (token: string) => {
-    try {
-      // Fetch reference request using the token
-      const { data: referenceData, error: refError } = await supabase
-        .from('reference_requests')
-        .select('*')
-        .eq('token', token)
-        .single();
+  const fetchReferenceRequest = async (tokenValue: string) => {
+    setLoading(true);
+    console.log('[ReferenceForm] fetching via RPC reference_requests_get_by_token', tokenValue);
 
-      if (refError) {
-        console.error('Reference request error:', refError);
-        toast({
-          title: "Invalid Link",
-          description: "This reference link is invalid or has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Use the SECURITY DEFINER RPC that allows public access until submitted/expired
+    const { data, error } = await supabase.rpc('reference_requests_get_by_token', {
+      p_token: tokenValue,
+    });
 
-      // Check if the request has expired
-      if (new Date(referenceData.expires_at) < new Date()) {
-        toast({
-          title: "Link Expired",
-          description: "This reference link has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if already completed
-      if (referenceData.status === 'completed') {
-        setReferenceRequest(referenceData);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch the associated job application
-      const { data: applicationData, error: appError } = await supabase
-        .from('job_applications')
-        .select('*')
-        .eq('id', referenceData.application_id)
-        .single();
-
-      if (appError) {
-        console.error('Application error:', appError);
-        toast({
-          title: "Error",
-          description: "Failed to load application data.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setReferenceRequest(referenceData);
-      setApplication(applicationData);
-      
-      // Pre-fill form with existing data if available
-      setFormData(prev => ({
-        ...prev,
-        refereeEmail: referenceData.reference_email,
-        refereeFullName: referenceData.reference_name
-      }));
-
-    } catch (error) {
-      console.error('Error fetching reference request:', error);
+    if (error) {
+      console.error('reference_requests_get_by_token error:', error);
       toast({
-        title: "Error",
-        description: "Failed to load reference request.",
-        variant: "destructive",
+        title: 'Invalid Link',
+        description: 'This reference link is invalid or has expired.',
+        variant: 'destructive',
       });
-    } finally {
       setLoading(false);
+      return;
     }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+      // Not found, expired, or already completed
+      toast({
+        title: 'Link Unavailable',
+        description: 'This reference link is invalid, expired, or already submitted.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Minimal referenceRequest state (for reference_type and id usage, etc.)
+    const refReq: ReferenceRequest = {
+      id: row.id,
+      application_id: row.application_id,
+      reference_type: row.reference_type,
+      reference_name: row.reference_name,
+      reference_email: row.reference_email,
+      reference_data: null,
+      status: row.status,
+      expires_at: row.expires_at,
+    };
+    setReferenceRequest(refReq);
+
+    // Build a minimal application object so existing UI continues to work
+    const app: JobApplication = {
+      id: row.application_id,
+      personal_info: {
+        fullName: row.applicant_name,
+        dateOfBirth: row.applicant_dob,
+        postcode: row.applicant_postcode,
+        positionAppliedFor: row.position_applied_for,
+      },
+    };
+    setApplication(app);
+
+    // Pre-fill form with referee details if available
+    setFormData((prev) => ({
+      ...prev,
+      // keep existing prefill behavior
+      // Note: refereeEmail is not used in inputs but was previously set in state
+      // we preserve that behavior here to avoid type churn
+      // @ts-ignore - preserve existing flexible shape
+      refereeEmail: row.reference_email,
+      refereeFullName: row.reference_name || prev.refereeFullName,
+    }));
+
+    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,33 +155,39 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
     try {
       if (!referenceRequest) return;
 
-      // Update the reference request with the form data and mark as completed
-      const { error: updateError } = await supabase
-        .from('reference_requests')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          form_data: formData
-        })
-        .eq('id', referenceRequest.id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Reference Submitted",
-        description: "Thank you for providing your reference. It has been submitted successfully.",
+      console.log('[ReferenceForm] submitting via RPC reference_requests_submit');
+      const { data, error } = await supabase.rpc('reference_requests_submit', {
+        p_token: token,
+        p_form_data: formData as any,
       });
 
-      // Update local state to show completion message
-      setReferenceRequest(prev => prev ? { ...prev, status: 'completed' } : null);
+      if (error) {
+        console.error('reference_requests_submit error:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to submit reference. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    } catch (error) {
-      console.error('Error submitting reference:', error);
+      if (data !== true) {
+        // Token was invalid/expired or already submitted during submit attempt
+        toast({
+          title: 'Link Unavailable',
+          description: 'This reference link is invalid, expired, or already submitted.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to submit reference. Please try again.",
-        variant: "destructive",
+        title: 'Reference Submitted',
+        description: 'Thank you for providing your reference. It has been submitted successfully.',
       });
+
+      // Locally mark as completed; the RPC already invalidates the token
+      setReferenceRequest((prev) => (prev ? { ...prev, status: 'completed' } : prev));
     } finally {
       setSubmitting(false);
     }

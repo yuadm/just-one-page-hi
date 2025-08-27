@@ -2223,6 +2223,30 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      reference_requests_get_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          applicant_dob: string
+          applicant_name: string
+          applicant_postcode: string
+          application_id: string
+          company_name: string
+          expires_at: string
+          id: string
+          is_expired: boolean
+          position_applied_for: string
+          reference_address: string
+          reference_company: string
+          reference_email: string
+          reference_name: string
+          reference_type: string
+          status: string
+        }[]
+      }
+      reference_requests_submit: {
+        Args: { p_form_data: Json; p_token: string }
+        Returns: boolean
+      }
       run_historical_data_backfill: {
         Args: Record<PropertyKey, never>
         Returns: Json
