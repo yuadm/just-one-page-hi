@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ReferenceForm } from '@/components/job-application/ReferenceForm';
+import { CompanyProvider } from '@/contexts/CompanyContext';
 
 export default function Reference() {
   const location = useLocation();
@@ -30,21 +31,23 @@ export default function Reference() {
   }, [location.search]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Provide a Job Reference</h1>
-      </header>
-      <main>
-        {token ? (
-          <ReferenceForm token={token} />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Your secure reference link is missing or invalid. Please use the link provided in your email.
-            </p>
-          </div>
-        )}
-      </main>
-    </div>
+    <CompanyProvider>
+      <div className="mx-auto max-w-4xl px-4 py-10">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">Provide a Job Reference</h1>
+        </header>
+        <main>
+          {token ? (
+            <ReferenceForm token={token} />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Your secure reference link is missing or invalid. Please use the link provided in your email.
+              </p>
+            </div>
+          )}
+        </main>
+      </div>
+    </CompanyProvider>
   );
 }
