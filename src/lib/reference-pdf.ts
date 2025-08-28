@@ -2,9 +2,10 @@ import jsPDF from 'jspdf';
 
 interface ReferenceData {
   refereeFullName: string;
+  refereeJobTitle?: string;
   
   // Employment reference specific
-  employmentStatus?: string; // current or previous
+  employmentStatus?: string; // current, previous, or neither
   relationshipDescription?: string;
   jobTitle?: string;
   startDate?: string;
@@ -95,21 +96,32 @@ export const generateReferencePDF = (
   pdf.text(referenceType, pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
-  // Applicant Information
+  // Applicant Information - Horizontal Layout
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`Name: ${applicantName}`, margin, yPosition);
-  yPosition += lineHeight;
-  pdf.text(`Date of Birth: ${applicantDOB}`, margin, yPosition);
-  yPosition += lineHeight;
-  pdf.text(`Postcode: ${applicantPostcode}`, margin, yPosition);
+  const nameText = `Name: ${applicantName}`;
+  const dobText = `Date of Birth: ${applicantDOB}`;
+  const postcodeText = `Postcode: ${applicantPostcode}`;
+  
+  pdf.text(nameText, margin, yPosition);
+  const nameWidth = pdf.getTextWidth(nameText);
+  pdf.text(dobText, margin + nameWidth + 20, yPosition);
+  const dobWidth = pdf.getTextWidth(dobText);
+  pdf.text(postcodeText, margin + nameWidth + dobWidth + 40, yPosition);
   yPosition += 15;
 
-  // Referee Name
+  // Referee Information
   pdf.setFont('helvetica', 'bold');
   pdf.text('Referee Name:', margin, yPosition);
   pdf.setFont('helvetica', 'normal');
   pdf.text(reference.form_data.refereeFullName || '', margin + 70, yPosition);
+  
+  if (reference.form_data.refereeJobTitle) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Job Title:', margin + 200, yPosition);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(reference.form_data.refereeJobTitle, margin + 250, yPosition);
+  }
   yPosition += 15;
 
   // Reference specific content
@@ -117,56 +129,62 @@ export const generateReferencePDF = (
     // Employment Status
     if (reference.form_data.employmentStatus) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Employment Status:', margin, yPosition);
+      pdf.text('Q: Are you this person\'s current or previous employer?', margin, yPosition);
+      yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(reference.form_data.employmentStatus, margin + 85, yPosition);
+      pdf.text(`A: ${reference.form_data.employmentStatus}`, margin, yPosition);
       yPosition += lineHeight + 5;
     }
 
     // Relationship Description
     if (reference.form_data.relationshipDescription) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Relationship:', margin, yPosition);
+      pdf.text('Q: What is your relationship to this person?', margin, yPosition);
       yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      yPosition = addWrappedText(reference.form_data.relationshipDescription, margin, yPosition, pageWidth - 2 * margin);
-      yPosition += 5;
+      pdf.text(`A: ${reference.form_data.relationshipDescription}`, margin, yPosition);
+      yPosition += lineHeight + 5;
     }
 
     // Job Title
     if (reference.form_data.jobTitle) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Job Title:', margin, yPosition);
+      pdf.text('Q: Please state the person\'s job title:', margin, yPosition);
+      yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(reference.form_data.jobTitle, margin + 60, yPosition);
+      pdf.text(`A: ${reference.form_data.jobTitle}`, margin, yPosition);
       yPosition += lineHeight + 5;
     }
 
     // Employment Dates
     if (reference.form_data.startDate || reference.form_data.endDate) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Employment Period:', margin, yPosition);
+      pdf.text('Q: Employment Period:', margin, yPosition);
+      yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${reference.form_data.startDate || ''} to ${reference.form_data.endDate || ''}`, margin + 95, yPosition);
+      const startDate = reference.form_data.startDate ? new Date(reference.form_data.startDate).toLocaleDateString() : 'Not provided';
+      const endDate = reference.form_data.endDate ? new Date(reference.form_data.endDate).toLocaleDateString() : 'Not provided';
+      pdf.text(`A: From ${startDate} to ${endDate}`, margin, yPosition);
       yPosition += lineHeight + 5;
     }
 
     // Attendance
     if (reference.form_data.attendance) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Attendance Record:', margin, yPosition);
+      pdf.text('Q: How would you describe their recent attendance record?', margin, yPosition);
+      yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(reference.form_data.attendance, margin + 95, yPosition);
+      pdf.text(`A: ${reference.form_data.attendance}`, margin, yPosition);
       yPosition += lineHeight + 5;
     }
 
     // Leaving Reason
     if (reference.form_data.leavingReason) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Reason for Leaving:', margin, yPosition);
+      pdf.text('Q: Why did the person leave your employment?', margin, yPosition);
       yPosition += lineHeight;
       pdf.setFont('helvetica', 'normal');
-      yPosition = addWrappedText(reference.form_data.leavingReason, margin, yPosition, pageWidth - 2 * margin);
+      yPosition = addWrappedText(`A: ${reference.form_data.leavingReason}`, margin, yPosition, pageWidth - 2 * margin);
       yPosition += 5;
     }
   } else {
@@ -221,13 +239,22 @@ export const generateReferencePDF = (
   pdf.text('Background Checks:', margin, yPosition);
   yPosition += lineHeight + 3;
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.text('Aware of any criminal convictions/cautions:', margin, yPosition);
-  pdf.text(reference.form_data.convictionsKnown || 'Not answered', margin + 140, yPosition);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Q: Are you aware of any convictions, cautions, reprimands or final warnings', margin, yPosition);
   yPosition += lineHeight;
+  pdf.text('that are not protected as defined by the Rehabilitation of Offenders Act 1974?', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`A: ${reference.form_data.convictionsKnown || 'Not answered'}`, margin, yPosition);
+  yPosition += lineHeight + 3;
 
-  pdf.text('Subject of current criminal proceedings:', margin, yPosition);
-  pdf.text(reference.form_data.criminalProceedingsKnown || 'Not answered', margin + 140, yPosition);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Q: Is this person currently the subject of any criminal proceedings', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.text('or any police investigation?', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`A: ${reference.form_data.criminalProceedingsKnown || 'Not answered'}`, margin, yPosition);
   yPosition += lineHeight + 5;
 
   // Criminal details if provided
@@ -373,17 +400,23 @@ export const generateManualReferencePDF = (
   const referenceTitle = data.referenceType === 'employer' ? 'Employment reference for' : 'Character reference for';
   addTitle(referenceTitle);
   
-  // Basic Information
+  // Basic Information - Horizontal Layout
   pdf.setFontSize(12);
-  pdf.text(`Name: ${data.applicantName}`, margin, y);
-  y += 8;
-  pdf.text(`Date of Birth: _______________________`, margin, y);
-  y += 8;
-  pdf.text(`Postcode: _______________________`, margin, y);
+  const nameText = `Name: ${data.applicantName}`;
+  const dobText = `Date of Birth: _______________________`;
+  const postcodeText = `Postcode: _______________________`;
+  
+  pdf.text(nameText, margin, y);
+  const nameWidth = pdf.getTextWidth(nameText);
+  pdf.text(dobText, margin + nameWidth + 20, y);
+  const dobWidth = pdf.getTextWidth(dobText);
+  pdf.text(postcodeText, margin + nameWidth + dobWidth + 40, y);
   y += 15;
 
-  // Referee Name
+  // Referee Information
   addLabeledLine('Referee Name:', data.referee.name);
+  y += 3;
+  addLabeledLine('Referee Job Title:', data.referee.jobTitle);
   y += 8;
 
   // Reference Type Specific Questions
@@ -392,16 +425,16 @@ export const generateManualReferencePDF = (
     pdf.text('Are you this person\'s current or previous employer?', margin, y);
     y += 8;
     pdf.setFont('helvetica', 'normal');
-    pdf.text('☐ Current    ☐ Previous', margin, y);
+    pdf.text('☐ Current    ☐ Previous    ☐ Neither', margin, y);
     y += 12;
 
     addLabeledLine('What is your relationship to this person (e.g. "I am her/his manager")?');
     y += 3;
     addLabeledLine('Please state the person\'s job title:');
     y += 3;
-    addLabeledLine('When did they start working for you (month/year)?');
+    addLabeledLine('Employment Start Date:');
     y += 3;
-    addLabeledLine('When did they finish working for you (month/year)?');
+    addLabeledLine('Employment End Date:');
     y += 8;
 
     pdf.setFont('helvetica', 'bold');

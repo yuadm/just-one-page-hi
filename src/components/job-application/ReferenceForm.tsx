@@ -40,9 +40,10 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
   const [formData, setFormData] = useState({
     // Referee information
     refereeFullName: '',
+    refereeJobTitle: '',
     
     // Employment reference specific
-    employmentStatus: '', // current or previous
+    employmentStatus: '', // current, previous, or neither
     relationshipDescription: '',
     jobTitle: '',
     startDate: '',
@@ -257,15 +258,26 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
               <p><strong>Postcode:</strong> {application.personal_info?.postcode || 'Not provided'}</p>
             </div>
 
-            {/* Referee Name */}
-            <div>
-              <Label htmlFor="refereeFullName">Referee Name *</Label>
-              <Input
-                id="refereeFullName"
-                value={formData.refereeFullName}
-                onChange={(e) => setFormData(prev => ({ ...prev, refereeFullName: e.target.value }))}
-                required
-              />
+            {/* Referee Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="refereeFullName">Referee Name *</Label>
+                <Input
+                  id="refereeFullName"
+                  value={formData.refereeFullName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, refereeFullName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="refereeJobTitle">Referee Job Title *</Label>
+                <Input
+                  id="refereeJobTitle"
+                  value={formData.refereeJobTitle}
+                  onChange={(e) => setFormData(prev => ({ ...prev, refereeJobTitle: e.target.value }))}
+                  required
+                />
+              </div>
             </div>
 
             {/* Reference Type Specific Questions */}
@@ -285,6 +297,10 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="previous" id="previous" />
                       <Label htmlFor="previous">Previous</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="neither" id="neither" />
+                      <Label htmlFor="neither">Neither</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -312,22 +328,22 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="startDate">When did they start working for you (month/year)? *</Label>
+                    <Label htmlFor="startDate">Employment Start Date *</Label>
                     <Input
                       id="startDate"
+                      type="date"
                       value={formData.startDate}
                       onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                      placeholder="e.g., January 2020"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="endDate">When did they finish working for you (month/year)? *</Label>
+                    <Label htmlFor="endDate">Employment End Date *</Label>
                     <Input
                       id="endDate"
+                      type="date"
                       value={formData.endDate}
                       onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                      placeholder="e.g., December 2022 or Still employed"
                       required
                     />
                   </div>
@@ -479,7 +495,7 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
 
             {(formData.convictionsKnown === 'yes' || formData.criminalProceedingsKnown === 'yes') && (
               <div>
-                <Label htmlFor="criminalDetails">Please provide details *</Label>
+                <Label htmlFor="criminalDetails">If you answered 'yes' to either of the two previous questions, please provide details *</Label>
                 <Textarea
                   id="criminalDetails"
                   value={formData.criminalDetails}
