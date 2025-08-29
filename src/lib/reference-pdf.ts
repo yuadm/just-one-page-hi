@@ -127,81 +127,80 @@ export const generateReferencePDF = (
   // Reference specific content
   if (reference.reference_type === 'employer') {
     // Employment Status
-    if (reference.form_data.employmentStatus) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: Are you this person\'s current or previous employer?', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`A: ${reference.form_data.employmentStatus}`, margin, yPosition);
-      yPosition += lineHeight + 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Are you this person\'s current or previous employer?', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    const currentSelected = reference.form_data.employmentStatus === 'current' ? '☑' : '☐';
+    const previousSelected = reference.form_data.employmentStatus === 'previous' ? '☑' : '☐';
+    const neitherSelected = reference.form_data.employmentStatus === 'neither' ? '☑' : '☐';
+    pdf.text(`A: ${currentSelected} Current    ${previousSelected} Previous    ${neitherSelected} Neither`, margin, yPosition);
+    yPosition += lineHeight + 5;
 
     // Relationship Description
-    if (reference.form_data.relationshipDescription) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: What is your relationship to this person?', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`A: ${reference.form_data.relationshipDescription}`, margin, yPosition);
-      yPosition += lineHeight + 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: What is your relationship to this person (e.g. "I am her/his manager")?', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    yPosition = addWrappedText(`A: ${reference.form_data.relationshipDescription || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+    yPosition += 5;
 
     // Job Title
-    if (reference.form_data.jobTitle) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: Please state the person\'s job title:', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`A: ${reference.form_data.jobTitle}`, margin, yPosition);
-      yPosition += lineHeight + 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Please state the person\'s job title:', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`A: ${reference.form_data.jobTitle || 'Not provided'}`, margin, yPosition);
+    yPosition += lineHeight + 5;
 
     // Employment Dates
-    if (reference.form_data.startDate || reference.form_data.endDate) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: Employment Period:', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      const startDate = reference.form_data.startDate ? new Date(reference.form_data.startDate).toLocaleDateString() : 'Not provided';
-      const endDate = reference.form_data.endDate ? new Date(reference.form_data.endDate).toLocaleDateString() : 'Not provided';
-      pdf.text(`A: From ${startDate} to ${endDate}`, margin, yPosition);
-      yPosition += lineHeight + 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Employment Period:', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    const startDate = reference.form_data.startDate ? new Date(reference.form_data.startDate).toLocaleDateString() : 'Not provided';
+    const endDate = reference.form_data.endDate ? new Date(reference.form_data.endDate).toLocaleDateString() : 'Not provided';
+    pdf.text(`A: From ${startDate} to ${endDate}`, margin, yPosition);
+    yPosition += lineHeight + 5;
 
     // Attendance
-    if (reference.form_data.attendance) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: How would you describe their recent attendance record?', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`A: ${reference.form_data.attendance}`, margin, yPosition);
-      yPosition += lineHeight + 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: How would you describe their recent attendance record?', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    const goodSelected = reference.form_data.attendance === 'good' ? '☑' : '☐';
+    const averageSelected = reference.form_data.attendance === 'average' ? '☑' : '☐';
+    const poorSelected = reference.form_data.attendance === 'poor' ? '☑' : '☐';
+    pdf.text(`A: ${goodSelected} Good    ${averageSelected} Average    ${poorSelected} Poor`, margin, yPosition);
+    yPosition += lineHeight + 5;
 
     // Leaving Reason
-    if (reference.form_data.leavingReason) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Q: Why did the person leave your employment?', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      yPosition = addWrappedText(`A: ${reference.form_data.leavingReason}`, margin, yPosition, pageWidth - 2 * margin);
-      yPosition += 5;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Why did the person leave your employment (if they are still employed, please write \'still employed\')?', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    yPosition = addWrappedText(`A: ${reference.form_data.leavingReason || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+    yPosition += 5;
   } else {
     // Character reference specific content
-    if (reference.form_data.relationshipDescription) {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Relationship Description:', margin, yPosition);
-      yPosition += lineHeight;
-      pdf.setFont('helvetica', 'normal');
-      yPosition = addWrappedText(reference.form_data.relationshipDescription, margin, yPosition, pageWidth - 2 * margin);
-      yPosition += 10;
-    }
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Do you know this person from outside employment or education?', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('A: ☐ Yes    ☐ No', margin, yPosition);
+    yPosition += lineHeight + 5;
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Q: Please describe your relationship with this person, including how long you have known them:', margin, yPosition);
+    yPosition += lineHeight;
+    pdf.setFont('helvetica', 'normal');
+    yPosition = addWrappedText(`A: ${reference.form_data.relationshipDescription || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+    yPosition += 10;
   }
 
   // Character qualities
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Character Assessment:', margin, yPosition);
+  pdf.text('Q: In your opinion, which of the following describes this person (tick each that is true)?', margin, yPosition);
   yPosition += lineHeight + 3;
 
   const qualities = [
@@ -216,78 +215,79 @@ export const generateReferencePDF = (
   ];
 
   pdf.setFont('helvetica', 'normal');
+  pdf.text('A:', margin, yPosition);
+  yPosition += lineHeight;
   qualities.forEach(quality => {
     const isChecked = reference.form_data[quality.key as keyof ReferenceData];
-    pdf.text(isChecked ? '☑' : '☐', margin, yPosition);
-    pdf.text(quality.label, margin + 10, yPosition);
+    pdf.text(isChecked ? '☑' : '☐', margin + 10, yPosition);
+    pdf.text(quality.label, margin + 20, yPosition);
     yPosition += lineHeight;
   });
 
   // Qualities not ticked reason
-  if (reference.form_data.qualitiesNotTickedReason) {
-    yPosition += 5;
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Explanation for unchecked qualities:', margin, yPosition);
-    yPosition += lineHeight;
-    pdf.setFont('helvetica', 'normal');
-    yPosition = addWrappedText(reference.form_data.qualitiesNotTickedReason, margin, yPosition, pageWidth - 2 * margin);
-    yPosition += 10;
-  }
+  yPosition += 5;
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Q: If you did not tick one or more of the above, please tell us why here:', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.setFont('helvetica', 'normal');
+  yPosition = addWrappedText(`A: ${reference.form_data.qualitiesNotTickedReason || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+  yPosition += 10;
 
   // Criminal background questions
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Background Checks:', margin, yPosition);
-  yPosition += lineHeight + 3;
+  yPosition = addWrappedText('Q: The position this person has applied for involves working with vulnerable people. Are you aware of any convictions, cautions, reprimands or final warnings that the person may have received that are not protected as defined by the Rehabilitation of Offenders Act 1974 (Exceptions) Order 1975 (as amended in 2013 by SI 210 1198)?', margin, yPosition, pageWidth - 2 * margin, 11);
+  yPosition += 3;
+  pdf.setFont('helvetica', 'normal');
+  const convictionsYes = reference.form_data.convictionsKnown === 'yes' ? '☑' : '☐';
+  const convictionsNo = reference.form_data.convictionsKnown === 'no' ? '☑' : '☐';
+  pdf.text(`A: ${convictionsYes} Yes    ${convictionsNo} No`, margin, yPosition);
+  yPosition += lineHeight + 5;
 
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Q: Are you aware of any convictions, cautions, reprimands or final warnings', margin, yPosition);
-  yPosition += lineHeight;
-  pdf.text('that are not protected as defined by the Rehabilitation of Offenders Act 1974?', margin, yPosition);
-  yPosition += lineHeight;
+  yPosition = addWrappedText('Q: To your knowledge, is this person currently the subject of any criminal proceedings (for example, charged or summoned but not yet dealt with) or any police investigation?', margin, yPosition, pageWidth - 2 * margin, 11);
+  yPosition += 3;
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`A: ${reference.form_data.convictionsKnown || 'Not answered'}`, margin, yPosition);
-  yPosition += lineHeight + 3;
-
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('Q: Is this person currently the subject of any criminal proceedings', margin, yPosition);
-  yPosition += lineHeight;
-  pdf.text('or any police investigation?', margin, yPosition);
-  yPosition += lineHeight;
-  pdf.setFont('helvetica', 'normal');
-  pdf.text(`A: ${reference.form_data.criminalProceedingsKnown || 'Not answered'}`, margin, yPosition);
+  const proceedingsYes = reference.form_data.criminalProceedingsKnown === 'yes' ? '☑' : '☐';
+  const proceedingsNo = reference.form_data.criminalProceedingsKnown === 'no' ? '☑' : '☐';
+  pdf.text(`A: ${proceedingsYes} Yes    ${proceedingsNo} No`, margin, yPosition);
   yPosition += lineHeight + 5;
 
   // Criminal details if provided
-  if (reference.form_data.criminalDetails) {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Criminal Details:', margin, yPosition);
-    yPosition += lineHeight;
-    pdf.setFont('helvetica', 'normal');
-    yPosition = addWrappedText(reference.form_data.criminalDetails, margin, yPosition, pageWidth - 2 * margin);
-    yPosition += 10;
-  }
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Q: If you answered "yes" to either of the two previous questions, please provide details:', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.setFont('helvetica', 'normal');
+  yPosition = addWrappedText(`A: ${reference.form_data.criminalDetails || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+  yPosition += 10;
 
   // Additional Comments
-  if (reference.form_data.additionalComments) {
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Additional Comments:', margin, yPosition);
-    yPosition += lineHeight;
-    pdf.setFont('helvetica', 'normal');
-    yPosition = addWrappedText(reference.form_data.additionalComments, margin, yPosition, pageWidth - 2 * margin);
-    yPosition += 10;
-  }
-
-  // Signature and Date
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Signature:', margin, yPosition);
+  pdf.text('Q: Please tell us anything else about this person that you think we should know:', margin, yPosition);
+  yPosition += lineHeight;
   pdf.setFont('helvetica', 'normal');
-  pdf.text(reference.form_data.refereeFullName || '', margin + 50, yPosition);
+  yPosition = addWrappedText(`A: ${reference.form_data.additionalComments || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
+  yPosition += 10;
+
+  // Referee Information
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Referee Name:', margin, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(reference.form_data.refereeFullName || '', margin + 70, yPosition);
   yPosition += lineHeight;
 
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Date:', margin, yPosition);
+  pdf.text('Referee Job Title:', margin, yPosition);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(reference.form_data.signatureDate || new Date(reference.completed_at).toLocaleDateString(), margin + 30, yPosition);
+  pdf.text(reference.form_data.refereeJobTitle || '', margin + 85, yPosition);
+  yPosition += lineHeight + 5;
+
+  // Declaration and Date
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Declaration:', margin, yPosition);
+  yPosition += lineHeight;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Date of completion:', margin, yPosition);
+  pdf.text(reference.form_data.signatureDate || new Date(reference.completed_at).toLocaleDateString(), margin + 100, yPosition);
 
   // Footer
   yPosition = pdf.internal.pageSize.getHeight() - 30;
