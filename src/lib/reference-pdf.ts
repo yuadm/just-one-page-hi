@@ -514,7 +514,7 @@ export const generateManualReferencePDF = (
     pdf.text('How would you describe their recent attendance record?', margin, yPosition);
     yPosition += lineHeight;
     pdf.setFont('helvetica', 'normal');
-    pdf.text('[ ] Good    [ ] Average    [ ] Poor', margin, yPosition);
+    pdf.text('[X] Good    [ ] Average    [ ] Poor', margin, yPosition);
     yPosition += lineHeight + 2;
 
     // Leaving Reason
@@ -567,14 +567,14 @@ export const generateManualReferencePDF = (
   for (let i = 0; i < qualities.length; i += 2) {
     ensureSpace(8);
     
-    // Left column quality - unchecked
-    pdf.text('[ ]', margin, yPosition);
+    // Left column quality - preselected
+    pdf.text('[X]', margin, yPosition);
     pdf.text(qualities[i], margin + 15, yPosition);
     
-    // Right column quality (if exists) - unchecked
+    // Right column quality (if exists) - preselected
     if (i + 1 < qualities.length) {
       const rightStartX = margin + columnWidth;
-      pdf.text('[ ]', rightStartX, yPosition);
+      pdf.text('[X]', rightStartX, yPosition);
       pdf.text(qualities[i + 1], rightStartX + 15, yPosition);
     }
     
@@ -588,7 +588,7 @@ export const generateManualReferencePDF = (
   pdf.text('If you did not tick one or more of the above, please tell us why here:', margin, yPosition);
   yPosition += lineHeight;
   pdf.setFont('helvetica', 'normal');
-  yPosition = addWrappedText('', margin, yPosition, pageWidth - 2 * margin);
+  yPosition = addWrappedText('Not provided', margin, yPosition, pageWidth - 2 * margin);
   yPosition += 5;
 
   // Criminal background questions - CRITICAL SECTION
@@ -619,7 +619,7 @@ export const generateManualReferencePDF = (
   pdf.text('Any additional comments you would like to make about this person:', margin, yPosition);
   yPosition += lineHeight;
   pdf.setFont('helvetica', 'normal');
-  yPosition = addWrappedText('', margin, yPosition, pageWidth - 2 * margin);
+  yPosition = addWrappedText('Not provided', margin, yPosition, pageWidth - 2 * margin);
   yPosition += 10;
 
   // Referee Information
