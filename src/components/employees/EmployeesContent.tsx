@@ -1234,6 +1234,7 @@ export function EmployeesContent() {
                   placeholder="e.g., EMP001"
                 />
               </div>
+              {/* Temporarily hidden phone field
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
@@ -1243,6 +1244,7 @@ export function EmployeesContent() {
                   placeholder="Enter phone number"
                 />
               </div>
+              */}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1286,6 +1288,7 @@ export function EmployeesContent() {
               </div>
             </div>
 
+            {/* Temporarily hidden Employee Type and Working Hours fields
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="employee_type">Employee Type</Label>
@@ -1314,6 +1317,7 @@ export function EmployeesContent() {
                 />
               </div>
             </div>
+            */}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1326,6 +1330,7 @@ export function EmployeesContent() {
                   placeholder="28"
                 />
               </div>
+              {/* Temporarily hidden hours restriction field
               <div className="space-y-2">
                 <Label htmlFor="hours_restriction">Hours Restriction</Label>
                 <Input
@@ -1335,6 +1340,7 @@ export function EmployeesContent() {
                   placeholder="e.g., 20 hours max"
                 />
               </div>
+              */}
             </div>
           </div>
           <DialogFooter>
