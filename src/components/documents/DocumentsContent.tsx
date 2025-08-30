@@ -1323,10 +1323,6 @@ export function DocumentsContent() {
         document={selectedDocument}
         open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
-        employees={employees}
-        documentTypes={documentTypes}
-        branches={branches}
-        onSave={fetchData}
       />
 
       {/* Document Edit Dialog */}
