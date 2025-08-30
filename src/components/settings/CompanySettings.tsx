@@ -263,7 +263,7 @@ export function CompanySettings() {
                 <img
                   src={formData.logo}
                   alt="Company Logo"
-                  className="w-16 h-16 object-contain rounded-lg bg-card p-2"
+                  className="w-16 h-16 object-contain"
                 />
                 <Button
                   variant="destructive"
