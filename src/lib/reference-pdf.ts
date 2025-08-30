@@ -45,6 +45,13 @@ interface CompletedReference {
   application_id: string;
 }
 
+interface ReferenceRequestData {
+  created_at: string;
+  completed_at: string | null;
+  reference_name: string;
+  reference_email: string;
+}
+
 interface CompanySettings {
   name: string;
   logo?: string;
@@ -55,7 +62,8 @@ export const generateReferencePDF = (
   applicantName: string,
   applicantDOB: string,
   applicantPostcode: string,
-  companySettings: CompanySettings = { name: 'Company Name' }
+  companySettings: CompanySettings = { name: 'Company Name' },
+  referenceRequestData?: ReferenceRequestData
 ) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -353,6 +361,58 @@ export const generateReferencePDF = (
   pdf.text('Date of completion:', margin, yPosition);
   pdf.setFont('helvetica', 'normal');
   pdf.text(reference.form_data.signatureDate || new Date(reference.completed_at).toLocaleDateString(), margin + 100, yPosition);
+  yPosition += lineHeight + 10;
+
+  // Reference tracking information
+  if (referenceRequestData) {
+    ensureSpace(80);
+    
+    // Helper function to format date to British format with GMT timezone
+    const formatTimestamp = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 should be 12
+      const hoursStr = String(hours).padStart(2, '0');
+      
+      return `${day}/${month}/${year} ${hoursStr}:${minutes}:${seconds} ${ampm} GMT`;
+    };
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    
+    // Document created by line
+    pdf.text('Document created by Mohamed Ahmed (recruitment@daryelcare.co.uk)', margin, yPosition);
+    yPosition += lineHeight;
+    
+    // Request sent date
+    pdf.text(formatTimestamp(referenceRequestData.created_at), margin, yPosition);
+    yPosition += lineHeight + 3;
+    
+    // Document e-signed by line
+    pdf.text(`Document e-signed by ${referenceRequestData.reference_name} (${referenceRequestData.reference_email})`, margin, yPosition);
+    yPosition += lineHeight;
+    
+    // Completion date
+    if (referenceRequestData.completed_at) {
+      pdf.text(formatTimestamp(referenceRequestData.completed_at), margin, yPosition);
+      yPosition += lineHeight + 3;
+      
+      // Reference form completed line
+      pdf.text('Reference form completed', margin, yPosition);
+      yPosition += lineHeight;
+      
+      // Completion date again
+      pdf.text(formatTimestamp(referenceRequestData.completed_at), margin, yPosition);
+    }
+  }
 
   return pdf;
 };
@@ -382,7 +442,8 @@ export interface ManualReferenceInput {
 
 export const generateManualReferencePDF = (
   data: ManualReferenceInput,
-  companySettings: CompanySettings = { name: 'Company Name' }
+  companySettings: CompanySettings = { name: 'Company Name' },
+  referenceRequestData?: ReferenceRequestData
 ) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -654,6 +715,39 @@ export const generateManualReferencePDF = (
   pdf.text('Date of completion:', margin, yPosition);
   pdf.setFont('helvetica', 'normal');
   pdf.text('', margin + 100, yPosition);
+  yPosition += lineHeight + 10;
+
+  // Reference tracking information for manual PDFs
+  ensureSpace(60);
+  
+  // Helper function to format date to British format with GMT timezone
+  const formatTimestamp = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    const hoursStr = String(hours).padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hoursStr}:${minutes}:${seconds} ${ampm} GMT`;
+  };
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(10);
+  
+  // Document created by line
+  pdf.text('Document created by Mohamed Ahmed (recruitment@daryelcare.co.uk)', margin, yPosition);
+  yPosition += lineHeight;
+  
+  // For manual PDFs, use current date if no reference request data
+  const creationDate = referenceRequestData?.created_at || new Date().toISOString();
+  pdf.text(formatTimestamp(creationDate), margin, yPosition);
 
   return pdf;
 };
