@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, CheckCircle, AlertTriangle, Clock, Shield, Eye, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Filter, Download, Search } from "lucide-react";
+import { ArrowLeft, Calendar, Users, CheckCircle, AlertTriangle, Clock, Shield, Eye, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Filter, Download } from "lucide-react";
 import { usePermissions } from "@/contexts/PermissionsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -116,7 +115,6 @@ export function ComplianceTypeContent() {
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [branchFilter, setBranchFilter] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
   const [completedByUsers, setCompletedByUsers] = useState<{ [key: string]: { name: string; created_at: string } }>({});
 
 // Spot check edit state
@@ -145,17 +143,11 @@ const [supervisionTarget, setSupervisionTarget] = useState<{ recordId: string } 
     return branchNames.sort();
   }, [employeeStatusList, branches, getAccessibleBranches, isAdmin]);
 
+  // Filtered and sorted employees
   const filteredAndSortedEmployees = useMemo(() => {
     let filtered = employeeStatusList;
 
-    // Apply search filter first
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(item => 
-        item.employee.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
+    // Apply status filter first
     if (filteredStatus) {
       filtered = filtered.filter(item => item.status === filteredStatus);
     }
@@ -983,16 +975,6 @@ const handleStatusCardClick = (status: 'compliant' | 'overdue' | 'due' | 'pendin
                       Employee Compliance Status
                     </CardTitle>
                     <div className="flex items-center gap-4">
-                      {/* Search Input */}
-                      <div className="flex items-center gap-2">
-                        <Search className="w-4 h-4" />
-                        <Input
-                          placeholder="Search by name..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-48"
-                        />
-                      </div>
                       {/* Branch Filter */}
                       <div className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
