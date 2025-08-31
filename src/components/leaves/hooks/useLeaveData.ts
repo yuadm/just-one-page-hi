@@ -128,28 +128,6 @@ export function useLeaveData() {
 
   useEffect(() => {
     fetchData();
-
-    // Set up real-time subscription for leave requests
-    const subscription = supabase
-      .channel('admin_leave_requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leave_requests'
-        },
-        (payload) => {
-          console.log('Real-time admin leave update:', payload);
-          // Refetch data when changes occur
-          fetchData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   return {

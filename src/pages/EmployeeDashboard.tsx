@@ -61,33 +61,6 @@ function EmployeeDashboardContent() {
     }
   };
 
-  // Set up real-time subscription for leave requests
-  useEffect(() => {
-    if (!employee) return;
-
-    const subscription = supabase
-      .channel('employee_leave_requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leave_requests',
-          filter: `employee_id=eq.${employee.id}`
-        },
-        (payload) => {
-          console.log('Real-time leave update:', payload);
-          // Refetch data when changes occur
-          fetchLeaveRequests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [employee?.id]);
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/employee-login');
