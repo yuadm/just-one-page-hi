@@ -39,10 +39,9 @@ interface DocumentViewDialogProps {
   document: Document | null;
   open: boolean;
   onClose: () => void;
-  onDocumentUpdate?: () => void;
 }
 
-export function DocumentViewDialog({ document, open, onClose, onDocumentUpdate }: DocumentViewDialogProps) {
+export function DocumentViewDialog({ document, open, onClose }: DocumentViewDialogProps) {
   const [employeeDocuments, setEmployeeDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingDocument, setEditingDocument] = useState<string | null>(null);
@@ -126,7 +125,6 @@ export function DocumentViewDialog({ document, open, onClose, onDocumentUpdate }
       setEditingMain(false);
       // Refresh the documents
       fetchEmployeeDocuments(document.employee_id);
-      onDocumentUpdate?.();
     } catch (error) {
       console.error('Error updating document:', error);
       toast({
@@ -177,7 +175,6 @@ export function DocumentViewDialog({ document, open, onClose, onDocumentUpdate }
       setEditValues({});
       // Refresh the documents
       fetchEmployeeDocuments(document.employee_id);
-      onDocumentUpdate?.();
     } catch (error) {
       console.error('Error updating document:', error);
       toast({

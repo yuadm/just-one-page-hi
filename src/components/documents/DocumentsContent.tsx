@@ -1323,7 +1323,6 @@ export function DocumentsContent() {
         document={selectedDocument}
         open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
-        onDocumentUpdate={fetchData}
       />
 
       {/* Document Edit Dialog */}
