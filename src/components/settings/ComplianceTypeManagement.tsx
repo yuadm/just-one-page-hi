@@ -20,6 +20,7 @@ interface ComplianceType {
   has_questionnaire: boolean;
   created_at: string;
   updated_at: string;
+  source?: 'employees' | 'clients';
 }
 
 const FREQUENCY_OPTIONS = [
@@ -77,23 +78,29 @@ export function ComplianceTypeManagement() {
   const fetchComplianceTypes = async () => {
     try {
       console.log('Fetching compliance types in management...');
-      const { data, error } = await supabase
-        .from('compliance_types')
-        .select('*')
-        .order('name');
+      
+      // Fetch from both employee and client compliance types tables
+      const [employeeTypesResponse, clientTypesResponse] = await Promise.all([
+        supabase.from('compliance_types').select('*').order('name'),
+        supabase.from('client_compliance_types').select('*').order('name')
+      ]);
 
-      if (error) {
-        console.error('Error fetching compliance types:', error);
-        toast({
-          title: "Error",
-          description: `Failed to fetch compliance types: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
+      if (employeeTypesResponse.error) {
+        console.error('Error fetching employee compliance types:', employeeTypesResponse.error);
       }
 
-      console.log('Compliance types fetched in management:', data);
-      setComplianceTypes(data || []);
+      if (clientTypesResponse.error) {
+        console.error('Error fetching client compliance types:', clientTypesResponse.error);
+      }
+
+      // Merge and deduplicate by name, mark source table
+      const employeeTypes = (employeeTypesResponse.data || []).map(type => ({ ...type, source: 'employees' as const }));
+      const clientTypes = (clientTypesResponse.data || []).map(type => ({ ...type, source: 'clients' as const }));
+      
+      const allTypes = [...employeeTypes, ...clientTypes];
+      
+      console.log('Compliance types fetched in management:', allTypes);
+      setComplianceTypes(allTypes);
     } catch (error) {
       console.error('Error fetching compliance types:', error);
       toast({
@@ -134,7 +141,7 @@ export function ComplianceTypeManagement() {
       }
 
       console.log('Compliance type added successfully:', data);
-      setComplianceTypes([...complianceTypes, data]);
+      setComplianceTypes([...complianceTypes, { ...data, source: newComplianceType.useFor }]);
       setNewComplianceType({ name: "", description: "", frequency: "", has_questionnaire: false, useFor: "employees" });
       setIsAddDialogOpen(false);
       
@@ -160,8 +167,9 @@ export function ComplianceTypeManagement() {
 
     try {
       console.log('Updating compliance type:', editingComplianceType);
+      const tableName = editingComplianceType.source === 'clients' ? 'client_compliance_types' : 'compliance_types';
       const { error } = await supabase
-        .from('compliance_types')
+        .from(tableName)
         .update({
           name: editingComplianceType.name,
           description: editingComplianceType.description || null,
@@ -214,8 +222,9 @@ export function ComplianceTypeManagement() {
 
     try {
       console.log('Deleting compliance type:', complianceTypeToDelete);
+      const tableName = complianceTypeToDelete.source === 'clients' ? 'client_compliance_types' : 'compliance_types';
       const { error } = await supabase
-        .from('compliance_types')
+        .from(tableName)
         .delete()
         .eq('id', complianceTypeToDelete.id);
 
@@ -273,6 +282,15 @@ export function ComplianceTypeManagement() {
               <div key={complianceType.id} className="p-4 border rounded-lg space-y-2">
                 <div className="flex items-center justify-between">
                   <h5 className="font-medium">{complianceType.name}</h5>
+                  {complianceType.source && (
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      complianceType.source === 'employees' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {complianceType.source === 'employees' ? 'Employees' : 'Clients'}
+                    </span>
+                  )}
                 </div>
                 {complianceType.description && (
                   <p className="text-sm text-muted-foreground">{complianceType.description}</p>
