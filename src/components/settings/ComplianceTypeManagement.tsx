@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +20,7 @@ interface ComplianceType {
   description?: string;
   frequency: string;
   has_questionnaire: boolean;
+  target_table: 'employees' | 'clients';
   created_at: string;
   updated_at: string;
 }
@@ -65,7 +68,8 @@ export function ComplianceTypeManagement() {
     name: "",
     description: "",
     frequency: "",
-    has_questionnaire: false
+    has_questionnaire: false,
+    target_table: "employees" as 'employees' | 'clients'
   });
   const { toast } = useToast();
 
@@ -92,7 +96,10 @@ export function ComplianceTypeManagement() {
       }
 
       console.log('Compliance types fetched in management:', data);
-      setComplianceTypes(data || []);
+      setComplianceTypes((data || []).map(item => ({
+        ...item,
+        target_table: (item.target_table || 'employees') as 'employees' | 'clients'
+      })));
     } catch (error) {
       console.error('Error fetching compliance types:', error);
       toast({
@@ -116,7 +123,8 @@ export function ComplianceTypeManagement() {
           name: newComplianceType.name,
           description: newComplianceType.description || null,
           frequency: newComplianceType.frequency,
-          has_questionnaire: newComplianceType.has_questionnaire
+          has_questionnaire: newComplianceType.has_questionnaire,
+          target_table: newComplianceType.target_table
         }])
         .select()
         .single();
@@ -132,8 +140,11 @@ export function ComplianceTypeManagement() {
       }
 
       console.log('Compliance type added successfully:', data);
-      setComplianceTypes([...complianceTypes, data]);
-      setNewComplianceType({ name: "", description: "", frequency: "", has_questionnaire: false });
+      setComplianceTypes([...complianceTypes, {
+        ...data,
+        target_table: (data.target_table || 'employees') as 'employees' | 'clients'
+      }]);
+      setNewComplianceType({ name: "", description: "", frequency: "", has_questionnaire: false, target_table: "employees" });
       setIsAddDialogOpen(false);
       
       // Notify compliance page of the change
@@ -164,7 +175,8 @@ export function ComplianceTypeManagement() {
           name: editingComplianceType.name,
           description: editingComplianceType.description || null,
           frequency: editingComplianceType.frequency,
-          has_questionnaire: editingComplianceType.has_questionnaire
+          has_questionnaire: editingComplianceType.has_questionnaire,
+          target_table: editingComplianceType.target_table
         })
         .eq('id', editingComplianceType.id);
 
@@ -281,6 +293,9 @@ export function ComplianceTypeManagement() {
                       FREQUENCY_OPTIONS.find(opt => opt.value === complianceType.frequency)?.label || complianceType.frequency
                     }
                   </div>
+                  <Badge variant={complianceType.target_table === 'employees' ? 'default' : 'secondary'}>
+                    {complianceType.target_table === 'employees' ? 'Employees' : 'Clients'}
+                  </Badge>
                   {complianceType.has_questionnaire && (
                     <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                       Questionnaire Enabled
@@ -362,6 +377,24 @@ export function ComplianceTypeManagement() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Apply to</Label>
+              <RadioGroup
+                value={newComplianceType.target_table}
+                onValueChange={(value: 'employees' | 'clients') => setNewComplianceType(prev => ({ ...prev, target_table: value }))}
+                className="flex space-x-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="employees" id="employees" />
+                  <Label htmlFor="employees">Employees</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="clients" id="clients" />
+                  <Label htmlFor="clients">Clients</Label>
+                </div>
+              </RadioGroup>
+            </div>
             
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
@@ -436,6 +469,24 @@ export function ComplianceTypeManagement() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Apply to</Label>
+              <RadioGroup
+                value={editingComplianceType?.target_table || "employees"}
+                onValueChange={(value: 'employees' | 'clients') => setEditingComplianceType(prev => prev ? { ...prev, target_table: value } : null)}
+                className="flex space-x-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="employees" id="edit-employees" />
+                  <Label htmlFor="edit-employees">Employees</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="clients" id="edit-clients" />
+                  <Label htmlFor="edit-clients">Clients</Label>
+                </div>
+              </RadioGroup>
             </div>
             
             <div className="space-y-3">

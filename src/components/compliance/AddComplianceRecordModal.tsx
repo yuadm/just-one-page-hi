@@ -1,6 +1,6 @@
 
 import { useState, useEffect, ReactNode } from "react";
-import { CalendarIcon, FileText, User, Clock, Save } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,8 +16,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format, isValid } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -367,255 +365,182 @@ const [selectedPeriod, setSelectedPeriod] = useState(periodIdentifier || getCurr
   };
 
   const defaultTrigger = (
-    <Button className="gap-2">
-      <FileText className="h-4 w-4" />
+    <Button>
       Add Compliance Record
     </Button>
   );
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-4xl mx-auto max-h-[95vh] overflow-hidden">
-        <DialogHeader className="pb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle className="text-xl">Add Compliance Record</DialogTitle>
-              <DialogDescription className="text-sm">
-                Create a new compliance record for {complianceTypeName}
-              </DialogDescription>
-            </div>
-          </div>
-          <Badge variant="secondary" className="w-fit">
-            {frequency} - Period: {selectedPeriod}
-          </Badge>
+      <DialogContent className="w-[95vw] max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add Compliance Record</DialogTitle>
+          <DialogDescription>
+            Add a new compliance record for {complianceTypeName}
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="max-h-[70vh] overflow-y-auto pr-2">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Employee Selection Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <User className="h-4 w-4" />
-                  Employee Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!employeeId && (
-                  <div className="space-y-2">
-                    <Label htmlFor="employee" className="text-sm font-medium">Employee</Label>
-                    <Select value={selectedEmployeeId} onValueChange={(value) => {
-                      setSelectedEmployeeId(value);
-                      const employee = employees.find(emp => emp.id === value);
-                      setSelectedEmployeeName(employee?.name || '');
-                    }}>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select an employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id}>
-                            {employee.name} ({employee.branch || 'No Branch'})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!employeeId && (
+            <div className="space-y-2">
+              <Label htmlFor="employee">Employee</Label>
+              <Select value={selectedEmployeeId} onValueChange={(value) => {
+                setSelectedEmployeeId(value);
+                const employee = employees.find(emp => emp.id === value);
+                setSelectedEmployeeName(employee?.name || '');
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.branch || 'No Branch'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {employeeId && (
+            <div className="space-y-2">
+              <Label htmlFor="employee">Employee</Label>
+              <Input
+                id="employee"
+                value={selectedEmployeeName}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="period">Period</Label>
+            <Input
+              id="period"
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              placeholder="Enter period identifier"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Record Type</Label>
+            <Select
+              value={recordType}
+            onValueChange={(value: 'date' | 'new' | 'spotcheck' | 'supervision' | 'annualappraisal') => {
+              setRecordType(value);
+              if (value === 'spotcheck') {
+                setSpotcheckOpen(true);
+              }
+              if (value === 'supervision') {
+                setSupervisionOpen(true);
+              }
+              if (value === 'annualappraisal') {
+                setAnnualOpen(true);
+              }
+            }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Date</SelectItem>
+                <SelectItem value="new">New (before employee joined)</SelectItem>
+                {complianceTypeName?.toLowerCase().includes('spot') && (
+                  <SelectItem value="spotcheck">Complete Spot Check</SelectItem>
                 )}
-
-                {employeeId && (
-                  <div className="space-y-2">
-                    <Label htmlFor="employee" className="text-sm font-medium">Employee</Label>
-                    <Input
-                      id="employee"
-                      value={selectedEmployeeName}
-                      disabled
-                      className="bg-muted/50 h-11"
-                    />
-                  </div>
+                {complianceTypeName?.toLowerCase().includes('supervis') && (
+                  <SelectItem value="supervision">Complete Supervision</SelectItem>
                 )}
+                {complianceTypeName?.toLowerCase().includes('appraisal') && (
+                  <SelectItem value="annualappraisal">Complete Annual Appraisal</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="period" className="text-sm font-medium">Period</Label>
-                  <Input
-                    id="period"
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    placeholder="Enter period identifier"
-                    className="h-11"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Record Type Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Clock className="h-4 w-4" />
-                  Record Type
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Type of Record</Label>
-                  <Select
-                    value={recordType}
-                    onValueChange={(value: 'date' | 'new' | 'spotcheck' | 'supervision' | 'annualappraisal') => {
-                      setRecordType(value);
-                      if (value === 'spotcheck') {
-                        setSpotcheckOpen(true);
-                      }
-                      if (value === 'supervision') {
-                        setSupervisionOpen(true);
-                      }
-                      if (value === 'annualappraisal') {
-                        setAnnualOpen(true);
-                      }
-                    }}
+          {recordType === 'date' ? (
+            <div className="space-y-2">
+              <Label>Completion Date</Label>
+              {isValid(minDate) && isValid(maxDate) && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  Valid range for {frequency?.toLowerCase() || 'compliance'} period: {format(minDate, 'dd/MM/yyyy')} - {format(maxDate, 'dd/MM/yyyy')}
+                </p>
+              )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !completionDate && "text-muted-foreground"
+                    )}
                   >
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date">Date Entry</SelectItem>
-                      <SelectItem value="new">New (before employee joined)</SelectItem>
-                      {complianceTypeName?.toLowerCase().includes('spot') && (
-                        <SelectItem value="spotcheck">Complete Spot Check Form</SelectItem>
-                      )}
-                      {complianceTypeName?.toLowerCase().includes('supervis') && (
-                        <SelectItem value="supervision">Complete Supervision Form</SelectItem>
-                      )}
-                      {complianceTypeName?.toLowerCase().includes('appraisal') && (
-                        <SelectItem value="annualappraisal">Complete Annual Appraisal Form</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Completion Details Card */}
-            {(recordType === 'date' || recordType === 'new') && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <CalendarIcon className="h-4 w-4" />
-                    Completion Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {recordType === 'date' ? (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Completion Date</Label>
-                      {isValid(minDate) && isValid(maxDate) && (
-                        <div className="rounded-lg bg-muted/50 p-3">
-                          <p className="text-sm text-muted-foreground">
-                            Valid range for {frequency?.toLowerCase() || 'compliance'} period: 
-                            <span className="font-medium"> {format(minDate, 'dd/MM/yyyy')} - {format(maxDate, 'dd/MM/yyyy')}</span>
-                          </p>
-                        </div>
-                      )}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-11",
-                              !completionDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {completionDate && isValid(completionDate) ? format(completionDate, "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={completionDate}
-                            onSelect={(date) => date && setCompletionDate(date)}
-                            disabled={(date) => !isValid(minDate) || !isValid(maxDate) || date < minDate || date > maxDate}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  ) : recordType === 'new' ? (
-                    <div className="space-y-3">
-                      <Label htmlFor="newText" className="text-sm font-medium">Custom Text</Label>
-                      <Input
-                        id="newText"
-                        value={newText}
-                        onChange={(e) => setNewText(e.target.value)}
-                        placeholder="Enter text (e.g., 'new', 'N/A', etc.)"
-                        className="h-11"
-                      />
-                      <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-3">
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          This text will be stored as the completion date for records that predate the employee's start date.
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Notes Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileText className="h-4 w-4" />
-                  Additional Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-sm font-medium">Notes (Optional)</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any additional notes or comments..."
-                    rows={4}
-                    className="resize-none"
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {completionDate && isValid(completionDate) ? format(completionDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={completionDate}
+                    onSelect={(date) => date && setCompletionDate(date)}
+                    disabled={(date) => !isValid(minDate) || !isValid(maxDate) || date < minDate || date > maxDate}
+                    initialFocus
+                    className="pointer-events-auto"
                   />
-                </div>
-              </CardContent>
-            </Card>
-          </form>
-        </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          ) : recordType === 'new' ? (
+            <div className="space-y-2">
+              <Label htmlFor="newText">Text</Label>
+              <Input
+                id="newText"
+                value={newText}
+                onChange={(e) => setNewText(e.target.value)}
+                placeholder="Enter text (e.g., 'new', 'N/A', etc.)"
+              />
+              <p className="text-sm text-muted-foreground">
+                This text will be stored as the completion date.
+              </p>
+            </div>
+          ) : null}
 
-        
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsOpen(false)}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          
-          <div className="flex flex-col sm:flex-row gap-2">
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
             {recordType === 'spotcheck' && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => spotcheckData ? generateSpotCheckPdf(spotcheckData, companySettings) : undefined}
                 disabled={!spotcheckData}
-                className="w-full sm:w-auto gap-2"
               >
-                <FileText className="h-4 w-4" />
                 Download PDF
               </Button>
             )}
@@ -625,9 +550,7 @@ const [selectedPeriod, setSelectedPeriod] = useState(periodIdentifier || getCurr
                 variant="outline"
                 onClick={() => supervisionData ? generateSupervisionPdf(supervisionData, companySettings) : undefined}
                 disabled={!supervisionData}
-                className="w-full sm:w-auto gap-2"
               >
-                <FileText className="h-4 w-4" />
                 Download PDF
               </Button>
             )}
@@ -637,31 +560,15 @@ const [selectedPeriod, setSelectedPeriod] = useState(periodIdentifier || getCurr
                 variant="outline"
                 onClick={() => annualData ? downloadAnnualAppraisalPDF(annualData, selectedEmployeeName, { name: companySettings?.name, logo: companySettings?.logo }) : undefined}
                 disabled={!annualData}
-                className="w-full sm:w-auto gap-2"
               >
-                <FileText className="h-4 w-4" />
                 Download PDF
               </Button>
             )}
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isLoading}
-              className="w-full sm:w-auto gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Add Record
-                </>
-              )}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Adding..." : "Add Record"}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
       <SpotCheckFormDialog
         open={spotcheckOpen}
