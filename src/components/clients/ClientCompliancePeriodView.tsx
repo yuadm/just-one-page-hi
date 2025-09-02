@@ -1,12 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { Calendar, Download, AlertTriangle, Plus, Eye, Edit, Trash2, Filter, Users, Search, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, Clock, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Download, AlertTriangle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ClientSpotCheckFormDialog, { ClientSpotCheckFormData } from "./ClientSpotCheckFormDialog";
@@ -15,7 +12,6 @@ interface ClientCompliancePeriodViewProps {
   complianceTypeId: string;
   complianceTypeName: string;
   frequency: string;
-  selectedFilter?: string | null;
 }
 
 interface PeriodData {
@@ -41,8 +37,7 @@ interface Client {
 export function ClientCompliancePeriodView({ 
   complianceTypeId, 
   complianceTypeName, 
-  frequency,
-  selectedFilter
+  frequency 
 }: ClientCompliancePeriodViewProps) {
   const [periods, setPeriods] = useState<PeriodData[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -52,11 +47,6 @@ export function ClientCompliancePeriodView({
   const [loading, setLoading] = useState(true);
   const [spotCheckDialogOpen, setSpotCheckDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [selectedBranch, setSelectedBranch] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"status" | "periods">("status");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<'name' | 'branch' | 'status' | 'completion_date'>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -301,146 +291,6 @@ export function ClientCompliancePeriodView({
     );
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return "bg-success/10 text-success border-success/20";
-      case 'overdue':
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      case 'pending':
-      default:
-        return "bg-warning/10 text-warning border-warning/20";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Compliant';
-      case 'overdue':
-        return 'Overdue';
-      case 'pending':
-      default:
-        return 'Due';
-    }
-  };
-
-  // Filtered and sorted clients
-  const filteredAndSortedClients = useMemo(() => {
-    let filtered = clients;
-
-    // Apply search filter
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(client =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.branches?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by branch
-    if (selectedBranch !== "all") {
-      filtered = filtered.filter(client => client.branch_id === selectedBranch);
-    }
-
-    // Filter by status if selectedFilter is provided
-    if (selectedFilter) {
-      filtered = filtered.filter(client => {
-        const record = getClientRecordForPeriod(client.id, selectedPeriod);
-        const status = record?.status || 'pending';
-        
-        switch (selectedFilter) {
-          case 'completed':
-            return status === 'completed';
-          case 'due':
-            return status === 'pending';
-          case 'overdue':
-            return status === 'overdue';
-          case 'pending':
-            return status === 'pending';
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply sorting
-    return filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortField) {
-        case 'name':
-          aValue = a.name;
-          bValue = b.name;
-          break;
-        case 'branch':
-          aValue = a.branches?.name || 'Unassigned';
-          bValue = b.branches?.name || 'Unassigned';
-          break;
-        case 'status':
-          const aRecord = getClientRecordForPeriod(a.id, selectedPeriod);
-          const bRecord = getClientRecordForPeriod(b.id, selectedPeriod);
-          const statusOrder = { 'completed': 3, 'pending': 2, 'overdue': 1 };
-          aValue = statusOrder[aRecord?.status || 'pending'] || 0;
-          bValue = statusOrder[bRecord?.status || 'pending'] || 0;
-          break;
-        case 'completion_date':
-          const aRecordDate = getClientRecordForPeriod(a.id, selectedPeriod);
-          const bRecordDate = getClientRecordForPeriod(b.id, selectedPeriod);
-          aValue = aRecordDate?.completion_date ? new Date(aRecordDate.completion_date).getTime() : 0;
-          bValue = bRecordDate?.completion_date ? new Date(bRecordDate.completion_date).getTime() : 0;
-          break;
-        default:
-          aValue = a.name;
-          bValue = b.name;
-      }
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      if (sortDirection === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-  }, [clients, searchTerm, selectedBranch, selectedFilter, selectedPeriod, sortField, sortDirection]);
-
-  const getUniqueBranches = () => {
-    const branches = clients.map(client => ({
-      id: client.branch_id || 'unassigned',
-      name: client.branches?.name || 'Unassigned'
-    }));
-    
-    // Remove duplicates
-    const uniqueBranches = branches.filter((branch, index, self) => 
-      index === self.findIndex(b => b.id === branch.id)
-    );
-    
-    return uniqueBranches;
-  };
-
-  const handleSort = (field: 'name' | 'branch' | 'status' | 'completion_date') => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: 'name' | 'branch' | 'status' | 'completion_date') => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4" />;
-    }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="w-4 h-4" />
-      : <ArrowDown className="w-4 h-4" />;
-  };
-
   if (loading) {
     return (
       <div className="space-y-4 animate-pulse">
@@ -456,468 +306,130 @@ export function ClientCompliancePeriodView({
 
   return (
     <div className="space-y-6">
-      {/* Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "status" | "periods")} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-muted/50 to-muted/30 p-1">
-          <TabsTrigger 
-            value="status" 
-            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground"
-          >
-            <Users className="w-4 h-4" />
-            Client Compliance Status
-          </TabsTrigger>
-          <TabsTrigger 
-            value="periods"
-            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground"
-          >
-            <Calendar className="w-4 h-4" />
-            Period Records
-          </TabsTrigger>
-        </TabsList>
+      {/* Period Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h3 className="text-xl font-semibold">Client Compliance Records</h3>
+        
+        {frequency.toLowerCase() !== 'annual' && (
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {getAvailableYears().map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
-        <TabsContent value="status" className="space-y-6">
-          {selectedPeriod && (
-            <div className="space-y-6">
-              {/* Compliance Requirements Card - matching employee style */}
-              <Card className="card-premium">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />
-                    Compliance Requirements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Frequency</p>
-                      <Badge variant="default" className="w-fit">
-                        {frequency}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Current Period</p>
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        {getPeriodLabel(selectedPeriod)}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Client Compliance</p>
-                      <div className="text-2xl font-bold text-foreground">
-                        {records.filter(r => 
-                          r.period_identifier === selectedPeriod && 
-                          r.status === 'completed'
-                        ).length}/{clients.length}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {clients.length > 0 
-                          ? `${Math.round((records.filter(r => 
-                              r.period_identifier === selectedPeriod && 
-                              r.status === 'completed'
-                            ).length / clients.length) * 100)}% compliant`
-                          : '0% compliant'
-                        }
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Branch Completion</p>
-                      <div className="space-y-2">
-                        {getUniqueBranches().map(branch => {
-                          const branchClients = clients.filter(c => 
-                            (c.branch_id || 'unassigned') === branch.id
-                          );
-                          const branchCompleted = branchClients.filter(c => {
-                            const record = getClientRecordForPeriod(c.id, selectedPeriod);
-                            return record?.status === 'completed';
-                          }).length;
-                          const branchRate = branchClients.length > 0 
-                            ? Math.round((branchCompleted / branchClients.length) * 100) 
-                            : 0;
-                          
-                          return (
-                            <div key={branch.id} className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">{branch.name}</span>
-                              <span className="font-medium">{branchRate}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Status Cards - matching employee style */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(() => {
-                  const completedCount = records.filter(r => 
-                    r.period_identifier === selectedPeriod && 
-                    r.status === 'completed'
-                  ).length;
-                  const overdueCount = records.filter(r => 
-                    r.period_identifier === selectedPeriod && 
-                    r.status === 'overdue'
-                  ).length;
-                  const pendingCount = clients.length - completedCount - overdueCount;
-                  const dueCount = clients.length - completedCount;
-                  
-                  return (
-                    <>
-                      <Card className="card-premium bg-gradient-to-br from-success/10 to-success/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-success/80">Compliant</p>
-                              <p className="text-2xl font-bold text-success">{completedCount}</p>
-                            </div>
-                            <CheckCircle className="w-8 h-8 text-success" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="card-premium bg-gradient-to-br from-warning/10 to-warning/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-warning/80">Due</p>
-                              <p className="text-2xl font-bold text-warning">{dueCount}</p>
-                            </div>
-                            <Clock className="w-8 h-8 text-warning" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="card-premium bg-gradient-to-br from-destructive/10 to-destructive/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-destructive/80">Overdue</p>
-                              <p className="text-2xl font-bold text-destructive">{overdueCount}</p>
-                            </div>
-                            <AlertTriangle className="w-8 h-8 text-destructive" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="card-premium bg-gradient-to-br from-muted/10 to-muted/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                              <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
-                            </div>
-                            <Users className="w-8 h-8 text-muted-foreground" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>
-                  );
-                })()}
+      {/* Periods Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {periods.map((period, index) => (
+          <Card 
+            key={period.period_identifier} 
+            className={`card-premium transition-all duration-300 cursor-pointer ${
+              period.is_current ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
+            } ${selectedPeriod === period.period_identifier ? 'ring-2 ring-secondary border-secondary' : ''}`}
+            style={{ animationDelay: `${index * 50}ms` }}
+            onClick={() => setSelectedPeriod(period.period_identifier)}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  {getPeriodLabel(period.period_identifier)}
+                </CardTitle>
+                {period.is_current && (
+                  <Badge className="bg-primary/10 text-primary border-primary/20">
+                    Current
+                  </Badge>
+                )}
               </div>
-
-              <div className="flex flex-col space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                      Client Compliance Overview
-                    </h3>
-                    <p className="text-muted-foreground">Current Period: {getPeriodLabel(selectedPeriod)}</p>
-                  </div>
-                </div>
-                
-                <Card className="bg-gradient-to-br from-card via-card/50 to-background border-border/50 shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10">
-                          <Shield className="w-5 h-5 text-primary" />
-                        </div>
-                        <CardTitle className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent font-bold">
-                          Client Compliance Status
-                        </CardTitle>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        {/* Search */}
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Search clients..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 w-64 bg-background border-border/50 focus:border-primary/50"
-                          />
-                        </div>
-                        
-                        {/* Branch Filter */}
-                        <div className="flex items-center gap-2">
-                          <Filter className="w-4 h-4 text-muted-foreground" />
-                          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                            <SelectTrigger className="w-40 bg-background border-border/50 focus:border-primary/50">
-                              <SelectValue placeholder="All Branches" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border shadow-lg z-50">
-                              <SelectItem value="all">All Branches</SelectItem>
-                              {getUniqueBranches().map((branch) => (
-                                <SelectItem key={branch.id} value={branch.id}>
-                                  {branch.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-muted/50 to-muted/30 hover:bg-muted/60">
-                          <TableHead 
-                            className="font-semibold cursor-pointer hover:bg-muted/20 transition-colors"
-                            onClick={() => handleSort('name')}
-                          >
-                            <div className="flex items-center gap-2">
-                              Client Name
-                              {getSortIcon('name')}
-                            </div>
-                          </TableHead>
-                          <TableHead 
-                            className="font-semibold cursor-pointer hover:bg-muted/20 transition-colors"
-                            onClick={() => handleSort('branch')}
-                          >
-                            <div className="flex items-center gap-2">
-                              Branch
-                              {getSortIcon('branch')}
-                            </div>
-                          </TableHead>
-                          <TableHead 
-                            className="font-semibold cursor-pointer hover:bg-muted/20 transition-colors"
-                            onClick={() => handleSort('status')}
-                          >
-                            <div className="flex items-center gap-2">
-                              Status
-                              {getSortIcon('status')}
-                            </div>
-                          </TableHead>
-                          <TableHead 
-                            className="font-semibold cursor-pointer hover:bg-muted/20 transition-colors"
-                            onClick={() => handleSort('completion_date')}
-                          >
-                            <div className="flex items-center gap-2">
-                              Completion Date
-                              {getSortIcon('completion_date')}
-                            </div>
-                          </TableHead>
-                          <TableHead className="font-semibold">Notes</TableHead>
-                          <TableHead className="font-semibold">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAndSortedClients.map((client) => {
-                          const record = getClientRecordForPeriod(client.id, selectedPeriod);
-                          const status = record?.status || 'pending';
-                          const isCompleted = status === 'completed';
-                      
-                           return (
-                             <TableRow key={client.id} className="group hover:bg-gradient-to-r hover:from-muted/20 hover:to-transparent transition-all duration-200 border-b border-border/50">
-                               <TableCell className="font-semibold text-foreground">{client.name}</TableCell>
-                               <TableCell className="text-muted-foreground">{client.branches?.name || 'Unassigned'}</TableCell>
-                               <TableCell>
-                                 <Badge className={`${getStatusBadge(status)} font-medium`}>
-                                   {getStatusText(status)}
-                                 </Badge>
-                               </TableCell>
-                               <TableCell className="text-muted-foreground">
-                                 {record?.completion_date && record.completion_date !== '' 
-                                   ? record.completion_date 
-                                   : '-'
-                                 }
-                               </TableCell>
-                               <TableCell className="text-muted-foreground">
-                                 <div className="max-w-xs truncate">
-                                   {record?.notes || '-'}
-                                 </div>
-                               </TableCell>
-                               <TableCell>
-                                 <div className="flex items-center gap-2">
-                                   {isCompleted ? (
-                                     <>
-                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                         <Download className="w-4 h-4" />
-                                       </Button>
-                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                         <Eye className="w-4 h-4" />
-                                       </Button>
-                                       <Button 
-                                         variant="ghost" 
-                                         size="sm" 
-                                         className="h-8 w-8 p-0"
-                                         onClick={() => {
-                                           setSelectedClient(client);
-                                           setSpotCheckDialogOpen(true);
-                                         }}
-                                       >
-                                         <Edit className="w-4 h-4" />
-                                       </Button>
-                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive">
-                                         <Trash2 className="w-4 h-4" />
-                                       </Button>
-                                     </>
-                                   ) : (
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => {
-                                         setSelectedClient(client);
-                                         setSpotCheckDialogOpen(true);
-                                       }}
-                                     >
-                                       Add Record
-                                     </Button>
-                                   )}
-                                 </div>
-                               </TableCell>
-                             </TableRow>
-                           );
-                         })}
-                       
-                         {filteredAndSortedClients.length === 0 && (
-                           <TableRow>
-                             <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                               No clients found
-                             </TableCell>
-                           </TableRow>
-                         )}
-                       </TableBody>
-                     </Table>
-                   </CardContent>
-                 </Card>
-               </div>
-             </div>
-           )}
-         </TabsContent>
-
-         <TabsContent value="periods" className="space-y-6">
-        <div className="space-y-6">
-          {/* Period Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-xl font-semibold">Client Compliance Records</h3>
+            </CardHeader>
             
-            {frequency.toLowerCase() !== 'annual' && (
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="w-40 bg-background border border-input">
-                  <SelectValue placeholder="Select Year" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Periods Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {periods.map((period, index) => (
-              <Card 
-                key={period.period_identifier} 
-                className={`card-premium transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                  period.is_current ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
-                } ${selectedPeriod === period.period_identifier ? 'ring-2 ring-secondary border-secondary' : ''}`}
-                style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => {
-                  setSelectedPeriod(period.period_identifier);
-                  setActiveTab("status");
-                }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      {getPeriodLabel(period.period_identifier)}
-                    </CardTitle>
-                    {period.is_current && (
-                      <Badge className="bg-primary/10 text-primary border-primary/20">
-                        Current
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Records</p>
-                      <p className="font-semibold text-lg">{period.record_count}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Completion</p>
-                      <Badge className={getCompletionBadge(period.completion_rate)}>
-                        {period.completion_rate.toFixed(1)}%
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Archive Warning */}
-                  {period.archive_due_date && (
-                    <div className="flex items-center gap-2 p-2 bg-warning/10 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-warning" />
-                      <span className="text-sm text-warning">
-                        Archive due: {new Date(period.archive_due_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Download Button */}
-                  {period.download_available && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle download
-                      }}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Archive
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <span>Current Period</span>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Records</p>
+                  <p className="font-semibold">{period.record_count}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-muted-foreground" />
-                  <span>Download Available (3 months before deletion)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning" />
-                  <span>Archive Due</span>
+                <div>
+                  <p className="text-muted-foreground">Completion</p>
+                  <Badge className={getCompletionBadge(period.completion_rate)}>
+                    {period.completion_rate.toFixed(1)}%
+                  </Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
+
+      {/* Client Details for Selected Period */}
+      {selectedPeriod && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Clients - {getPeriodLabel(selectedPeriod)}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {clients.map((client) => {
+                const record = getClientRecordForPeriod(client.id, selectedPeriod);
+                const isCompleted = record?.status === 'completed';
+                
+                return (
+                  <div key={client.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{client.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {client.branches?.name || 'Unknown Branch'}
+                      </p>
+                      {record && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isCompleted ? `Completed: ${record.completion_date}` : `Status: ${record.status}`}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-3 sm:mt-0">
+                      <Badge 
+                        className={isCompleted 
+                          ? "bg-success/10 text-success border-success/20" 
+                          : "bg-warning/10 text-warning border-warning/20"
+                        }
+                      >
+                        {isCompleted ? 'Completed' : 'Pending'}
+                      </Badge>
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedClient(client);
+                          setSpotCheckDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {isCompleted ? 'Update' : 'Complete'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {clients.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No clients found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Spot Check Dialog */}
       <ClientSpotCheckFormDialog

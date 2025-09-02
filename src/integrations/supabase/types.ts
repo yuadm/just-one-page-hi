@@ -1203,7 +1203,6 @@ export type Database = {
           id: string
           name: string
           questionnaire_id: string | null
-          target_table: string
           updated_at: string
         }
         Insert: {
@@ -1214,7 +1213,6 @@ export type Database = {
           id?: string
           name: string
           questionnaire_id?: string | null
-          target_table?: string
           updated_at?: string
         }
         Update: {
@@ -1225,7 +1223,6 @@ export type Database = {
           id?: string
           name?: string
           questionnaire_id?: string | null
-          target_table?: string
           updated_at?: string
         }
         Relationships: [
