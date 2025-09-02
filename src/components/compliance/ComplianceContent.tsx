@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Shield, Plus, Calendar, AlertTriangle } from "lucide-react";
+import { Shield, Plus, Calendar, AlertTriangle, Users, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +14,7 @@ interface ComplianceType {
   name: string;
   description: string;
   frequency: string;
+  target_table: 'employees' | 'clients';
   created_at: string;
 }
 
@@ -93,7 +95,10 @@ export function ComplianceContent() {
       }
 
       console.log('Compliance types fetched:', data);
-      setComplianceTypes(data || []);
+      setComplianceTypes((data || []).map(item => ({
+        ...item,
+        target_table: (item.target_table || 'employees') as 'employees' | 'clients'
+      })));
     } catch (error) {
       console.error('Error fetching compliance types:', error);
       toast({
@@ -131,8 +136,8 @@ export function ComplianceContent() {
 
   const handleComplianceTypeClick = (complianceType: ComplianceType) => {
     console.log('Navigating to compliance type:', complianceType.id);
-    // Check if this is a client compliance type
-    if (complianceType.name.toLowerCase().includes('client')) {
+    // Use the target_table to determine the route
+    if (complianceType.target_table === 'clients') {
       navigate(`/client-compliance/${complianceType.id}`, { state: { complianceType } });
     } else {
       navigate(`/compliance/${complianceType.id}`, { state: { complianceType } });
@@ -204,6 +209,10 @@ export function ComplianceContent() {
                     <p className="text-sm text-muted-foreground capitalize">{type.frequency}</p>
                   </div>
                 </div>
+                <Badge variant={type.target_table === 'employees' ? 'default' : 'secondary'} className="flex items-center gap-1">
+                  {type.target_table === 'employees' ? <Users className="w-3 h-3" /> : <Building className="w-3 h-3" />}
+                  {type.target_table === 'employees' ? 'Employees' : 'Clients'}
+                </Badge>
               </div>
             </CardHeader>
             
