@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ClientSpotCheckFormDialog, { ClientSpotCheckFormData } from "./ClientSpotCheckFormDialog";
+import { generateSpotCheckPdf } from "@/lib/spot-check-pdf";
+import { useCompany } from "@/contexts/CompanyContext";
 
 interface ClientCompliancePeriodViewProps {
   complianceTypeId: string;
@@ -38,6 +40,28 @@ interface Client {
   };
 }
 
+interface ClientSpotCheckRecord {
+  id?: string;
+  service_user_name?: string;
+  care_workers?: string;
+  date?: string;
+  time?: string;
+  performed_by?: string;
+  observations?: any[];
+}
+
+interface ClientComplianceRecord {
+  id: string;
+  client_id: string;
+  period_identifier: string;
+  status: string;
+  completion_date?: string;
+  completion_method?: string;
+  notes?: string;
+  clients?: Client;
+  client_spot_check_records?: ClientSpotCheckRecord[];
+}
+
 export function ClientCompliancePeriodView({ 
   complianceTypeId, 
   complianceTypeName, 
@@ -58,6 +82,7 @@ export function ClientCompliancePeriodView({
   const [sortField, setSortField] = useState<'name' | 'branch' | 'status' | 'completion_date'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
+  const { companySettings } = useCompany();
 
   useEffect(() => {
     fetchData();
@@ -142,7 +167,7 @@ export function ClientCompliancePeriodView({
     for (let year = endYear; year >= startYear; year--) {
       const isCurrentYear = year === currentYear;
       const yearsOld = currentYear - year;
-      const shouldShowDownload = yearsOld >= 5;
+      const shouldShowDownload = yearsOld >= 1; // Changed from >= 5 to >= 1 for easier testing
       const archiveDueYear = year + 6;
       
       switch (frequency.toLowerCase()) {
@@ -271,6 +296,91 @@ export function ClientCompliancePeriodView({
       toast({
         title: "Error saving spot check",
         description: "Could not save the spot check. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadPeriod = async (period: PeriodData) => {
+    try {
+      // Fetch all client compliance records for this period
+      const { data: periodRecords, error: recordsError } = await supabase
+        .from('client_compliance_period_records')
+        .select(`
+          *,
+          clients (
+            name,
+            branches (
+              name
+            )
+          ),
+          client_spot_check_records (
+            *
+          )
+        `)
+        .eq('client_compliance_type_id', complianceTypeId)
+        .eq('period_identifier', period.period_identifier)
+        .eq('status', 'completed');
+
+      if (recordsError) throw recordsError;
+
+      if (!periodRecords || periodRecords.length === 0) {
+        toast({
+          title: "No data to download",
+          description: "No completed compliance records found for this period.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let downloadCount = 0;
+
+      // Generate PDF for each completed record
+      for (const record of periodRecords) {
+        if (record.client_spot_check_records && record.client_spot_check_records.length > 0) {
+          const spotCheckRecord = record.client_spot_check_records[0];
+          
+          // Transform the data to match the PDF format - use safe property access
+          const pdfData = {
+            serviceUserName: (spotCheckRecord as any)?.service_user_name || record.clients?.name || 'Unknown',
+            careWorker1: ((spotCheckRecord as any)?.care_workers || '').toString().split(',')[0]?.trim() || 'Not specified',
+            careWorker2: ((spotCheckRecord as any)?.care_workers || '').toString().split(',')[1]?.trim() || '',
+            date: (spotCheckRecord as any)?.date || record.completion_date || '',
+            timeFrom: ((spotCheckRecord as any)?.time || '').toString().split('-')[0]?.trim() || 'Not specified',
+            timeTo: ((spotCheckRecord as any)?.time || '').toString().split('-')[1]?.trim() || '',
+            carriedBy: (spotCheckRecord as any)?.performed_by || 'Not specified',
+            observations: Array.isArray((spotCheckRecord as any)?.observations) ? (spotCheckRecord as any).observations : []
+          };
+
+          // Generate PDF
+          await generateSpotCheckPdf(pdfData, {
+            name: companySettings?.name,
+            logo: companySettings?.logo
+          });
+          
+          downloadCount++;
+        }
+      }
+
+      if (downloadCount === 0) {
+        toast({
+          title: "No spot check data found",
+          description: "No spot check records found for completed compliance records.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Download completed",
+        description: `Downloaded ${downloadCount} compliance records for ${getPeriodLabel(period.period_identifier)}.`,
+      });
+
+    } catch (error) {
+      console.error('Error downloading period data:', error);
+      toast({
+        title: "Download failed",
+        description: "Could not download the compliance records. Please try again.",
         variant: "destructive",
       });
     }
@@ -753,7 +863,7 @@ export function ClientCompliancePeriodView({
                       className="w-full"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Handle download
+                        handleDownloadPeriod(period);
                       }}
                     >
                       <Download className="w-4 h-4 mr-2" />
