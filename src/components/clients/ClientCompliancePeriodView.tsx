@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ClientSpotCheckFormDialog, { ClientSpotCheckFormData } from "./ClientSpotCheckFormDialog";
-import { downloadClientCompliancePDF } from "@/lib/client-compliance-pdf";
 
 interface ClientCompliancePeriodViewProps {
   complianceTypeId: string;
@@ -254,7 +253,7 @@ export function ClientCompliancePeriodView({
           date: data.date,
           time: data.time,
           performed_by: data.performedBy,
-          observations: data.observations as any
+          observations: JSON.stringify(data.observations)
         });
 
       if (spotCheckError) throw spotCheckError;
@@ -449,101 +448,6 @@ export function ClientCompliancePeriodView({
     return sortDirection === 'asc' 
       ? <ArrowUp className="w-4 h-4" />
       : <ArrowDown className="w-4 h-4" />;
-  };
-
-  const handleDownloadPDF = async () => {
-    try {
-      console.log('Starting PDF download...');
-      console.log('Selected period:', selectedPeriod);
-      console.log('Compliance type name:', complianceTypeName);
-      console.log('Clients count:', clients.length);
-      
-      if (!selectedPeriod) {
-        toast({
-          title: "Download Error",
-          description: "No period selected. Please select a period first.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (clients.length === 0) {
-        toast({
-          title: "Download Error", 
-          description: "No clients found for this compliance type.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Get company info
-      const { data: companyData, error: companyError } = await supabase
-        .from('company_settings')
-        .select('name, logo')
-        .maybeSingle();
-
-      if (companyError) {
-        console.error('Company data error:', companyError);
-      }
-
-      console.log('Company data:', companyData);
-
-      // Calculate stats for current period
-      const currentPeriodRecords = records.filter(r => r.period_identifier === selectedPeriod);
-      const totalClients = clients.length;
-      const completedClients = currentPeriodRecords.filter(r => r.status === 'completed').length;
-      const completionRate = totalClients > 0 ? (completedClients / totalClients) * 100 : 0;
-
-      console.log('Stats:', { totalClients, completedClients, completionRate });
-
-      // Prepare client data for PDF
-      const clientsForPDF = clients.map(client => {
-        const record = getClientRecordForPeriod(client.id, selectedPeriod);
-        return {
-          name: client.name,
-          branchName: client.branches?.name || 'Unassigned',
-          status: record?.status || 'pending',
-          completionDate: record?.completion_date,
-          completionMethod: record?.completion_method,
-          notes: record?.notes
-        };
-      });
-
-      console.log('Clients for PDF:', clientsForPDF.slice(0, 2)); // Log first 2 clients
-
-      const pdfData = {
-        complianceTypeName,
-        period: selectedPeriod,
-        frequency,
-        clients: clientsForPDF,
-        stats: {
-          totalClients,
-          completedClients,
-          completionRate
-        }
-      };
-
-      console.log('PDF Data prepared, calling downloadClientCompliancePDF...');
-
-      await downloadClientCompliancePDF(pdfData, {
-        name: companyData?.name,
-        logo: companyData?.logo
-      });
-
-      console.log('PDF generation completed successfully');
-
-      toast({
-        title: "PDF Downloaded",
-        description: "Client compliance report has been downloaded successfully.",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Download Error",
-        description: `Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
   };
 
   if (loading) {
