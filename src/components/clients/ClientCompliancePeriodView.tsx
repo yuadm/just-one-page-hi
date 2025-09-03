@@ -57,6 +57,7 @@ export function ClientCompliancePeriodView({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<'name' | 'branch' | 'status' | 'completion_date'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [company, setCompany] = useState<{ name?: string; logo?: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
