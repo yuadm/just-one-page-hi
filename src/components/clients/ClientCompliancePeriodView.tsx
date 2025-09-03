@@ -253,7 +253,7 @@ export function ClientCompliancePeriodView({
           date: data.date,
           time: data.time,
           performed_by: data.performedBy,
-          observations: JSON.stringify(data.observations)
+          observations: data.observations as any
         });
 
       if (spotCheckError) throw spotCheckError;
