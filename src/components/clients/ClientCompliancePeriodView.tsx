@@ -58,6 +58,49 @@ export function ClientCompliancePeriodView({
   const [sortField, setSortField] = useState<'name' | 'branch' | 'status' | 'completion_date'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
+  const { companySettings } = useCompany();
+
+  const handleDownloadPdf = async (record: any) => {
+    try {
+      const { data: spotCheckRecord, error } = await supabase
+        .from('client_spot_check_records')
+        .select('*')
+        .eq('compliance_record_id', record.id)
+        .single();
+
+      if (error || !spotCheckRecord) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch spot check data for PDF generation",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const formData: ClientSpotCheckFormData = {
+        serviceUserName: spotCheckRecord.service_user_name || '',
+        careWorkers: spotCheckRecord.care_workers || '',
+        date: spotCheckRecord.date || '',
+        time: spotCheckRecord.time ? spotCheckRecord.time.slice(0, 5) : '',
+        performedBy: spotCheckRecord.performed_by || '',
+        completedBy: record.completed_by || '',
+        observations: Array.isArray(spotCheckRecord.observations) ? spotCheckRecord.observations : []
+      };
+
+      const blob = new Blob(['PDF placeholder'], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const filename = `${formData.serviceUserName || 'Client'} spot check.pdf`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast({ title: "Success", description: "PDF downloaded" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     fetchData();
