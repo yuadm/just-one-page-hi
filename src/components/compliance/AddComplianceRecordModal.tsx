@@ -378,7 +378,7 @@ const [selectedPeriod, setSelectedPeriod] = useState(periodIdentifier || getCurr
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add {complianceTypeName} Record</DialogTitle>
+          <DialogTitle>Add Compliance Record</DialogTitle>
           <DialogDescription>
             Add a new compliance record for {complianceTypeName}
           </DialogDescription>
@@ -453,13 +453,13 @@ const [selectedPeriod, setSelectedPeriod] = useState(periodIdentifier || getCurr
                 <SelectItem value="date">Date</SelectItem>
                 <SelectItem value="new">New (before employee joined)</SelectItem>
                 {complianceTypeName?.toLowerCase().includes('spot') && (
-                  <SelectItem value="spotcheck">Complete {complianceTypeName}</SelectItem>
+                  <SelectItem value="spotcheck">Complete Spot Check</SelectItem>
                 )}
                 {complianceTypeName?.toLowerCase().includes('supervis') && (
-                  <SelectItem value="supervision">Complete {complianceTypeName}</SelectItem>
+                  <SelectItem value="supervision">Complete Supervision</SelectItem>
                 )}
                 {complianceTypeName?.toLowerCase().includes('appraisal') && (
-                  <SelectItem value="annualappraisal">Complete {complianceTypeName}</SelectItem>
+                  <SelectItem value="annualappraisal">Complete Annual Appraisal</SelectItem>
                 )}
               </SelectContent>
             </Select>
