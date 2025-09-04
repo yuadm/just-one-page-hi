@@ -50,18 +50,56 @@ export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, 
   const lineHeight = 16
   let y = page.getHeight() - margin
 
-  const drawText = (text: string, opts?: { bold?: boolean; size?: number; color?: [number, number, number] }) => {
+  const drawText = (text: string, opts?: { bold?: boolean; size?: number; color?: [number, number, number]; maxWidth?: number }) => {
     const f = opts?.bold ? boldFont : font
     const size = opts?.size ?? 11
     const color = opts?.color ? rgb(opts.color[0], opts.color[1], opts.color[2]) : rgb(0, 0, 0)
-    page.drawText(text ?? '', {
-      x: margin,
-      y: y - lineHeight,
-      size,
-      font: f,
-      color,
-    })
-    y -= lineHeight
+    const maxWidth = opts?.maxWidth ?? (page.getWidth() - margin * 2)
+    
+    // Handle text wrapping
+    const words = (text ?? '').split(' ')
+    let currentLine = ''
+    
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word
+      const textWidth = f.widthOfTextAtSize(testLine, size)
+      
+      if (textWidth <= maxWidth) {
+        currentLine = testLine
+      } else {
+        if (currentLine) {
+          page.drawText(currentLine, {
+            x: margin,
+            y: y - lineHeight,
+            size,
+            font: f,
+            color,
+          })
+          y -= lineHeight
+        }
+        currentLine = word
+        
+        // Check if single word is too long and truncate if necessary
+        if (f.widthOfTextAtSize(currentLine, size) > maxWidth) {
+          while (f.widthOfTextAtSize(currentLine + '...', size) > maxWidth && currentLine.length > 3) {
+            currentLine = currentLine.slice(0, -1)
+          }
+          currentLine += '...'
+        }
+      }
+    }
+    
+    // Draw remaining text
+    if (currentLine) {
+      page.drawText(currentLine, {
+        x: margin,
+        y: y - lineHeight,
+        size,
+        font: f,
+        color,
+      })
+      y -= lineHeight
+    }
   }
 
   const addSpacer = (amount = 8) => { y -= amount }
@@ -69,9 +107,64 @@ export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, 
   const drawKeyVal = (label: string, value?: string) => {
     const labelText = `${label}: `
     const labelWidth = boldFont.widthOfTextAtSize(labelText, 11)
+    const maxValueWidth = page.getWidth() - margin * 2 - labelWidth
+    
     page.drawText(labelText, { x: margin, y: y - lineHeight, size: 11, font: boldFont, color: rgb(0,0,0) })
-    page.drawText(String(value ?? ''), { x: margin + labelWidth, y: y - lineHeight, size: 11, font, color: rgb(0,0,0) })
-    y -= lineHeight
+    
+    const valueText = String(value ?? '')
+    const valueWidth = font.widthOfTextAtSize(valueText, 11)
+    
+    if (valueWidth <= maxValueWidth) {
+      // Value fits on one line
+      page.drawText(valueText, { x: margin + labelWidth, y: y - lineHeight, size: 11, font, color: rgb(0,0,0) })
+      y -= lineHeight
+    } else {
+      // Value needs to be wrapped
+      y -= lineHeight
+      const words = valueText.split(' ')
+      let currentLine = ''
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word
+        const textWidth = font.widthOfTextAtSize(testLine, 11)
+        
+        if (textWidth <= maxValueWidth) {
+          currentLine = testLine
+        } else {
+          if (currentLine) {
+            page.drawText(currentLine, {
+              x: margin + labelWidth,
+              y: y - lineHeight,
+              size: 11,
+              font,
+              color: rgb(0,0,0)
+            })
+            y -= lineHeight
+          }
+          currentLine = word
+          
+          // Check if single word is too long and truncate if necessary
+          if (font.widthOfTextAtSize(currentLine, 11) > maxValueWidth) {
+            while (font.widthOfTextAtSize(currentLine + '...', 11) > maxValueWidth && currentLine.length > 3) {
+              currentLine = currentLine.slice(0, -1)
+            }
+            currentLine += '...'
+          }
+        }
+      }
+      
+      // Draw remaining text
+      if (currentLine) {
+        page.drawText(currentLine, {
+          x: margin + labelWidth,
+          y: y - lineHeight,
+          size: 11,
+          font,
+          color: rgb(0,0,0)
+        })
+        y -= lineHeight
+      }
+    }
   }
 
   const ensureSpace = (needed: number) => {
@@ -192,21 +285,53 @@ export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, 
       drawText('Comments:', { bold: true, size: 10 })
       addSpacer(2)
       
-      // Word wrap comments if too long
-      const maxWidth = page.getWidth() - margin * 2 - 20 // Indent comments slightly
-      const words = comments.split(' ')
-      let currentLine = ''
+      // Use drawText with maxWidth for comments (indented)
+      const commentMaxWidth = page.getWidth() - margin * 2 - 20 // Indent comments slightly
+      const commentLines = comments.split('\n')
       
-      for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word
-        const textWidth = font.widthOfTextAtSize(testLine, 10)
-        
-        if (textWidth <= maxWidth) {
-          currentLine = testLine
-        } else {
+      commentLines.forEach(line => {
+        if (line.trim()) {
+          // Temporarily adjust margin for indentation
+          const originalMargin = margin
+          const commentMargin = margin + 20
+          
+          // Draw text with custom x position for indentation
+          const words = line.split(' ')
+          let currentLine = ''
+          
+          for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word
+            const textWidth = font.widthOfTextAtSize(testLine, 10)
+            
+            if (textWidth <= commentMaxWidth) {
+              currentLine = testLine
+            } else {
+              if (currentLine) {
+                page.drawText(currentLine, {
+                  x: commentMargin,
+                  y: y - lineHeight,
+                  size: 10,
+                  font,
+                  color: rgb(0.3, 0.3, 0.3)
+                })
+                y -= lineHeight
+              }
+              currentLine = word
+              
+              // Truncate if single word is too long
+              if (font.widthOfTextAtSize(currentLine, 10) > commentMaxWidth) {
+                while (font.widthOfTextAtSize(currentLine + '...', 10) > commentMaxWidth && currentLine.length > 3) {
+                  currentLine = currentLine.slice(0, -1)
+                }
+                currentLine += '...'
+              }
+            }
+          }
+          
+          // Draw remaining text
           if (currentLine) {
             page.drawText(currentLine, {
-              x: margin + 20, // Indent comments
+              x: commentMargin,
               y: y - lineHeight,
               size: 10,
               font,
@@ -214,21 +339,10 @@ export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, 
             })
             y -= lineHeight
           }
-          currentLine = word
+        } else {
+          y -= lineHeight // Empty line
         }
-      }
-      
-      // Draw remaining text
-      if (currentLine) {
-        page.drawText(currentLine, {
-          x: margin + 20,
-          y: y - lineHeight,
-          size: 10,
-          font,
-          color: rgb(0.3, 0.3, 0.3)
-        })
-        y -= lineHeight
-      }
+      })
     }
 
     // Add spacing between questions
