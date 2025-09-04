@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ClientSpotCheckFormDialog, { ClientSpotCheckFormData } from "./ClientSpotCheckFormDialog";
 import { ClientSpotCheckViewDialog } from "./ClientSpotCheckViewDialog";
+import { ClientDeleteConfirmDialog } from "./ClientDeleteConfirmDialog";
 import { generateClientSpotCheckPdf } from "@/lib/client-spot-check-pdf";
 import { useCompany } from "@/contexts/CompanyContext";
 
@@ -83,7 +84,9 @@ export function ClientCompliancePeriodView({
   const [sortField, setSortField] = useState<'name' | 'branch' | 'status' | 'completion_date'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSpotCheckRecord, setSelectedSpotCheckRecord] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { companySettings } = useCompany();
 
@@ -851,45 +854,9 @@ export function ClientCompliancePeriodView({
                                           variant="ghost" 
                                           size="sm" 
                                           className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-                                          onClick={async () => {
-                                            try {
-                                              const record = getClientRecordForPeriod(client.id, selectedPeriod);
-                                              if (!record) return;
-                                              
-                                              if (confirm(`Are you sure you want to delete the spot check record for ${client.name}? This action cannot be undone.`)) {
-                                                // Delete the spot check record first
-                                                const { error: spotCheckError } = await supabase
-                                                  .from('client_spot_check_records')
-                                                  .delete()
-                                                  .eq('compliance_record_id', record.id);
-                                                
-                                                if (spotCheckError) throw spotCheckError;
-                                                
-                                                // Delete the compliance record
-                                                const { error: complianceError } = await supabase
-                                                  .from('client_compliance_period_records')
-                                                  .delete()
-                                                  .eq('id', record.id);
-                                                
-                                                if (complianceError) throw complianceError;
-                                                
-                                                toast({
-                                                  title: "Record deleted",
-                                                  description: `Spot check record for ${client.name} has been deleted.`,
-                                                });
-                                                
-                                                // Refresh the data
-                                                fetchData();
-                                              }
-                                              
-                                            } catch (error) {
-                                              console.error('Error deleting client record:', error);
-                                              toast({
-                                                title: "Delete failed",
-                                                description: "Could not delete the record. Please try again.",
-                                                variant: "destructive",
-                                              });
-                                            }
+                                          onClick={() => {
+                                            setSelectedClient(client);
+                                            setDeleteDialogOpen(true);
                                           }}
                                         >
                                           <Trash2 className="w-4 h-4" />
@@ -1061,6 +1028,59 @@ export function ClientCompliancePeriodView({
         onOpenChange={setViewDialogOpen}
         client={selectedClient}
         spotCheckRecord={selectedSpotCheckRecord}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ClientDeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        client={selectedClient}
+        isDeleting={isDeleting}
+        onConfirm={async () => {
+          if (!selectedClient) return;
+          
+          try {
+            setIsDeleting(true);
+            const record = getClientRecordForPeriod(selectedClient.id, selectedPeriod);
+            if (!record) return;
+            
+            // Delete the spot check record first
+            const { error: spotCheckError } = await supabase
+              .from('client_spot_check_records')
+              .delete()
+              .eq('compliance_record_id', record.id);
+            
+            if (spotCheckError) throw spotCheckError;
+            
+            // Delete the compliance record
+            const { error: complianceError } = await supabase
+              .from('client_compliance_period_records')
+              .delete()
+              .eq('id', record.id);
+            
+            if (complianceError) throw complianceError;
+            
+            toast({
+              title: "Record deleted",
+              description: `Spot check record for ${selectedClient.name} has been deleted.`,
+            });
+            
+            setDeleteDialogOpen(false);
+            setSelectedClient(null);
+            // Refresh the data
+            fetchData();
+            
+          } catch (error) {
+            console.error('Error deleting client record:', error);
+            toast({
+              title: "Delete failed",
+              description: "Could not delete the record. Please try again.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
       />
     </div>
   );

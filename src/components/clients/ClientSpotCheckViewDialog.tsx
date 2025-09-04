@@ -2,7 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, User, Eye } from "lucide-react";
+import { Eye, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ClientSpotCheckRecord {
   id: string;
@@ -74,95 +75,94 @@ export function ClientSpotCheckViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Eye className="w-5 h-5 text-primary" />
-            Client Spot Check Record
-          </DialogTitle>
+      <DialogContent className="max-w-md">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-2">
+            <Eye className="w-5 h-5 text-muted-foreground" />
+            <DialogTitle className="text-lg font-semibold">
+              Compliance Record Details
+            </DialogTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-muted"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[calc(90vh-120px)]">
-          <div className="space-y-6 pr-4">
-            {/* Client Information */}
-            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-              <h3 className="font-semibold text-lg text-primary">Client Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">Client:</span>
-                  <span>{client.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Branch:</span>
-                  <span>{client.branches?.name || 'Unassigned'}</span>
-                </div>
-              </div>
+        <div className="text-sm text-muted-foreground mb-6">
+          View details for this compliance record.
+        </div>
+        
+        <div className="space-y-6">
+          {/* Client and Branch Row */}
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Client</div>
+              <div className="text-base font-semibold text-foreground">{client.name}</div>
             </div>
-
-            {/* Spot Check Information */}
-            <div className="bg-card border rounded-lg p-4 space-y-4">
-              <h3 className="font-semibold text-lg text-primary">Spot Check Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Service User Name</label>
-                  <p className="text-foreground">{spotCheckRecord.service_user_name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Date</label>
-                    <p className="text-foreground">{spotCheckRecord.date}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Completed By</label>
-                  <p className="text-foreground">{spotCheckRecord.performed_by}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Assessment Questions */}
-            <div className="bg-card border rounded-lg p-4">
-              <h3 className="font-semibold text-lg text-primary mb-4">Assessment Questions</h3>
-              <div className="space-y-4">
-                {spotCheckRecord.observations?.map((observation, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">
-                          {index + 1}. {observation.label}
-                        </h4>
-                      </div>
-                      <Badge className={getRatingBadge(observation.value)}>
-                        {getRatingText(observation.value)}
-                      </Badge>
-                    </div>
-                    
-                    {observation.comments && (
-                      <div className="mt-3 pt-3 border-t border-border">
-                        <label className="text-sm font-medium text-muted-foreground">Comments:</label>
-                        <p className="mt-1 text-foreground whitespace-pre-wrap">
-                          {observation.comments}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {index < spotCheckRecord.observations.length - 1 && (
-                      <Separator className="mt-4" />
-                    )}
-                  </div>
-                ))}
-                
-                {(!spotCheckRecord.observations || spotCheckRecord.observations.length === 0) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No assessment questions found
-                  </div>
-                )}
-              </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Branch</div>
+              <div className="text-base text-foreground">{client.branches?.name || 'Unassigned'}</div>
             </div>
           </div>
-        </ScrollArea>
+          
+          {/* Period and Status Row */}
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Period</div>
+              <div className="text-base text-foreground">{spotCheckRecord.date ? (() => {
+                const date = new Date(spotCheckRecord.date);
+                const year = date.getFullYear();
+                const quarter = Math.ceil((date.getMonth() + 1) / 3);
+                return `${year}-Q${quarter}`;
+              })() : 'N/A'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Status</div>
+              <Badge className="bg-success/10 text-success border-success/20">
+                Compliant
+              </Badge>
+            </div>
+          </div>
+          
+          {/* Completion Date and Created Row */}
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Completion Date</div>
+              <div className="text-base text-foreground">{spotCheckRecord.date || 'N/A'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Created</div>
+              <div className="text-base text-foreground">{spotCheckRecord.date || 'N/A'}</div>
+            </div>
+          </div>
+          
+          {/* Service User Name */}
+          <div>
+            <div className="text-sm font-medium text-muted-foreground mb-1">Service User Name</div>
+            <div className="text-base text-foreground">{spotCheckRecord.service_user_name}</div>
+          </div>
+          
+          {/* Completed By */}
+          <div>
+            <div className="text-sm font-medium text-muted-foreground mb-1">Completed By</div>
+            <div className="text-base text-foreground">{spotCheckRecord.performed_by}</div>
+          </div>
+          
+          {/* Assessment Summary */}
+          {spotCheckRecord.observations && spotCheckRecord.observations.length > 0 && (
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-2">Assessment Summary</div>
+              <div className="text-sm text-foreground">
+                {spotCheckRecord.observations.length} assessment question{spotCheckRecord.observations.length !== 1 ? 's' : ''} completed
+              </div>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
