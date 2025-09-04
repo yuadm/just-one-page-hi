@@ -28,10 +28,7 @@ export interface ClientSpotCheckObservation {
 
 export interface ClientSpotCheckFormData {
   serviceUserName: string;
-  careWorkers: string;
   date: string;
-  time: string;
-  performedBy: string;
   completedBy: string;
   observations: ClientSpotCheckObservation[];
 }
@@ -58,20 +55,14 @@ export default function ClientSpotCheckFormDialog({
 
   const [errors, setErrors] = useState<{
     serviceUserName?: string;
-    careWorkers?: string;
     date?: string;
-    time?: string;
-    performedBy?: string;
     completedBy?: string;
     observations?: Record<string, string>;
   }>({});
 
   const [form, setForm] = useState<ClientSpotCheckFormData>({
     serviceUserName: "",
-    careWorkers: "",
     date: "",
-    time: "",
-    performedBy: "",
     completedBy: "",
     observations: [],
   });
@@ -119,10 +110,7 @@ export default function ClientSpotCheckFormDialog({
 
       setForm({
         serviceUserName: initialData.serviceUserName || "",
-        careWorkers: initialData.careWorkers || "",
         date: initialData.date || "",
-        time: initialData.time || "",
-        performedBy: initialData.performedBy || "",
         completedBy: initialData.completedBy || "",
         observations: mergedObservations,
       });
@@ -149,10 +137,7 @@ export default function ClientSpotCheckFormDialog({
     const newErrors: typeof errors = { observations: {} };
 
     if (!form.serviceUserName) newErrors.serviceUserName = "Required";
-    if (!form.careWorkers) newErrors.careWorkers = "Required";
     if (!form.date) newErrors.date = "Required";
-    if (!form.time) newErrors.time = "Required";
-    if (!form.performedBy) newErrors.performedBy = "Required";
     if (!form.completedBy) newErrors.completedBy = "Required";
 
     for (const obs of form.observations) {
@@ -169,10 +154,7 @@ export default function ClientSpotCheckFormDialog({
 
     const hasErrors =
       !!newErrors.serviceUserName ||
-      !!newErrors.careWorkers ||
       !!newErrors.date ||
-      !!newErrors.time ||
-      !!newErrors.performedBy ||
       !!newErrors.completedBy ||
       Object.keys(newErrors.observations || {}).length > 0;
 
@@ -237,17 +219,6 @@ export default function ClientSpotCheckFormDialog({
               />
               {errors.serviceUserName && <p className="text-destructive text-xs mt-1">{errors.serviceUserName}</p>}
             </div>
-            
-            <div className="space-y-1">
-              <Label>Care Workers</Label>
-              <Input
-                value={form.careWorkers}
-                onChange={(e) => updateField("careWorkers", e.target.value)}
-                aria-invalid={!!errors.careWorkers}
-                className={errors.careWorkers ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
-              {errors.careWorkers && <p className="text-destructive text-xs mt-1">{errors.careWorkers}</p>}
-            </div>
 
             <div className="space-y-1">
               <Label>Date</Label>
@@ -287,29 +258,6 @@ export default function ClientSpotCheckFormDialog({
                 </PopoverContent>
               </Popover>
               {errors.date && <p className="text-destructive text-xs mt-1">{errors.date}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Label>Time</Label>
-              <Input
-                type="time"
-                value={form.time}
-                onChange={(e) => updateField("time", e.target.value)}
-                aria-invalid={!!errors.time}
-                className={errors.time ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
-              {errors.time && <p className="text-destructive text-xs mt-1">{errors.time}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Label>Performed By</Label>
-              <Input
-                value={form.performedBy}
-                onChange={(e) => updateField("performedBy", e.target.value)}
-                aria-invalid={!!errors.performedBy}
-                className={errors.performedBy ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
-              {errors.performedBy && <p className="text-destructive text-xs mt-1">{errors.performedBy}</p>}
             </div>
 
             <div className="space-y-1">
