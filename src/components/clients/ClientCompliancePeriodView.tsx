@@ -1159,6 +1159,7 @@ export function ClientCompliancePeriodView({
         initialData={editingSpotCheckData}
         periodIdentifier={selectedPeriod}
         frequency={frequency}
+        complianceTypeName={complianceTypeName}
       />
 
       {/* Generic Compliance Record Dialog */}

@@ -40,6 +40,7 @@ interface ClientSpotCheckFormDialogProps {
   initialData?: ClientSpotCheckFormData | null;
   periodIdentifier?: string;
   frequency?: string;
+  complianceTypeName?: string;
 }
 
 export default function ClientSpotCheckFormDialog({ 
@@ -48,7 +49,8 @@ export default function ClientSpotCheckFormDialog({
   onSubmit, 
   initialData, 
   periodIdentifier, 
-  frequency 
+  frequency,
+  complianceTypeName = "Service Quality Spot Check"
 }: ClientSpotCheckFormDialogProps) {
   const { companySettings } = useCompany();
   const { toast } = useToast();
@@ -190,7 +192,7 @@ export default function ClientSpotCheckFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Service Quality Spot Check</DialogTitle>
+          <DialogTitle>{complianceTypeName}</DialogTitle>
           <DialogDescription>Complete the client spot check form below</DialogDescription>
         </DialogHeader>
 
