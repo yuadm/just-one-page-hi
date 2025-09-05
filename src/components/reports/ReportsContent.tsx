@@ -29,6 +29,7 @@ interface ComplianceType {
   id: string;
   name: string;
   frequency: string;
+  isClientType?: boolean;
 }
 
 export function ReportsContent() {
@@ -118,13 +119,28 @@ export function ReportsContent() {
 
   const fetchComplianceTypes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('compliance_types')
-        .select('id, name, frequency')
-        .order('name');
+      // Fetch both employee and client compliance types
+      const [employeeTypes, clientTypes] = await Promise.all([
+        supabase
+          .from('compliance_types')
+          .select('id, name, frequency')
+          .order('name'),
+        supabase
+          .from('client_compliance_types')
+          .select('id, name, frequency')
+          .order('name')
+      ]);
 
-      if (error) throw error;
-      setComplianceTypes(data || []);
+      if (employeeTypes.error) throw employeeTypes.error;
+      if (clientTypes.error) throw clientTypes.error;
+
+      // Combine both types, marking client types
+      const allTypes = [
+        ...(employeeTypes.data || []),
+        ...(clientTypes.data || []).map(type => ({ ...type, isClientType: true }))
+      ];
+
+      setComplianceTypes(allTypes);
     } catch (error) {
       console.error('Error fetching compliance types:', error);
       toast({
@@ -162,7 +178,7 @@ export function ReportsContent() {
       name: "Compliance Report",
       description: "Compliance task completion status",
       icon: "🛡️",
-      fields: ["Task Name", "Employee", "Branch", "Period", "Completion Date", "Status", "Notes", "Frequency"]
+      fields: ["Task Name", "Employee", "Client", "Branch", "Period", "Completion Date", "Status", "Notes", "Frequency"]
     }
   ];
 
@@ -487,55 +503,124 @@ export function ReportsContent() {
           break;
 
         case "compliance":
-          let complianceQuery = supabase
-            .from('compliance_period_records')
-            .select(`
-              *,
-              employees!compliance_period_records_employee_id_fkey (name, branch),
-              compliance_types (name, frequency)
-            `)
-            .order('completion_date', { ascending: false });
-
-          if (selectedBranch !== "all") {
-            complianceQuery = complianceQuery.eq('employees.branch', selectedBranch);
-          }
-
-          if (selectedComplianceType !== "all") {
-            complianceQuery = complianceQuery.eq('compliance_type_id', selectedComplianceType);
-          }
-
           const currentComplianceType = getCurrentComplianceType();
-          if (currentComplianceType) {
+          
+          if (!currentComplianceType) {
+            toast({
+              title: "Please select a compliance type",
+              description: "You must select a specific compliance type to generate the report.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const isClientCompliance = currentComplianceType.isClientType;
+          let complianceData: any[] = [];
+          let complianceError: any = null;
+
+          if (isClientCompliance) {
+            // Query client compliance records
+            let clientComplianceQuery = supabase
+              .from('client_compliance_period_records')
+              .select(`
+                *,
+                clients!client_compliance_period_records_client_id_fkey (name, branches(name)),
+                client_compliance_types (name, frequency)
+              `)
+              .order('completion_date', { ascending: false });
+
+            if (selectedBranch !== "all") {
+              clientComplianceQuery = clientComplianceQuery.eq('clients.branches.name', selectedBranch);
+            }
+
+            if (selectedComplianceType !== "all") {
+              clientComplianceQuery = clientComplianceQuery.eq('client_compliance_type_id', selectedComplianceType);
+            }
+
+            // Apply period filters for client compliance
             if (currentComplianceType.frequency.toLowerCase() === 'annual') {
-              complianceQuery = complianceQuery.like('period_identifier', `${selectedYear}%`);
+              clientComplianceQuery = clientComplianceQuery.like('period_identifier', `${selectedYear}%`);
             } else if (currentComplianceType.frequency.toLowerCase() === 'monthly' && selectedMonths.length > 0) {
               const monthFilters = selectedMonths.map(month => `${selectedYear}-${month}`);
-              complianceQuery = complianceQuery.in('period_identifier', monthFilters);
+              clientComplianceQuery = clientComplianceQuery.in('period_identifier', monthFilters);
             } else if (currentComplianceType.frequency.toLowerCase() === 'quarterly' && selectedQuarters.length > 0) {
               const quarterFilters = selectedQuarters.map(quarter => `${selectedYear}-${quarter}`);
-              complianceQuery = complianceQuery.in('period_identifier', quarterFilters);
+              clientComplianceQuery = clientComplianceQuery.in('period_identifier', quarterFilters);
             }
+            
+            const result = await clientComplianceQuery;
+            complianceData = result.data || [];
+            complianceError = result.error;
+          } else {
+            // Query employee compliance records
+            let employeeComplianceQuery = supabase
+              .from('compliance_period_records')
+              .select(`
+                *,
+                employees!compliance_period_records_employee_id_fkey (name, branch),
+                compliance_types (name, frequency)
+              `)
+              .order('completion_date', { ascending: false });
+
+            if (selectedBranch !== "all") {
+              employeeComplianceQuery = employeeComplianceQuery.eq('employees.branch', selectedBranch);
+            }
+
+            if (selectedComplianceType !== "all") {
+              employeeComplianceQuery = employeeComplianceQuery.eq('compliance_type_id', selectedComplianceType);
+            }
+
+            // Apply period filters for employee compliance
+            if (currentComplianceType.frequency.toLowerCase() === 'annual') {
+              employeeComplianceQuery = employeeComplianceQuery.like('period_identifier', `${selectedYear}%`);
+            } else if (currentComplianceType.frequency.toLowerCase() === 'monthly' && selectedMonths.length > 0) {
+              const monthFilters = selectedMonths.map(month => `${selectedYear}-${month}`);
+              employeeComplianceQuery = employeeComplianceQuery.in('period_identifier', monthFilters);
+            } else if (currentComplianceType.frequency.toLowerCase() === 'quarterly' && selectedQuarters.length > 0) {
+              const quarterFilters = selectedQuarters.map(quarter => `${selectedYear}-${quarter}`);
+              employeeComplianceQuery = employeeComplianceQuery.in('period_identifier', quarterFilters);
+            }
+            
+            const result = await employeeComplianceQuery;
+            complianceData = result.data || [];
+            complianceError = result.error;
           }
-          
-          const { data: complianceData, error: complianceError } = await complianceQuery;
           
           if (complianceError) throw complianceError;
           
-          const transformedComplianceData = (complianceData || []).map(record => ({
-            'Task Name': record.compliance_types?.name || '',
-            'Employee': record.employees?.name || '',
-            'Branch': record.employees?.branch || '',
-            'Period': record.period_identifier || '',
-            'Completion Date': record.completion_date && record.completion_date.match(/^\d{4}-\d{2}-\d{2}/) 
-              ? new Date(record.completion_date).toLocaleDateString('en-GB') 
-              : record.completion_date || '',
-            'Status': record.status || '',
-            'Notes': record.notes || '',
-            'Frequency': record.compliance_types?.frequency || ''
-          }));
+          // Transform data based on type (client vs employee)
+          const transformedComplianceData = complianceData.map(record => {
+            if (isClientCompliance) {
+              return {
+                'Task Name': record.client_compliance_types?.name || '',
+                'Client': record.clients?.name || '',
+                'Branch': record.clients?.branches?.name || '',
+                'Period': record.period_identifier || '',
+                'Completion Date': record.completion_date && record.completion_date.match(/^\d{4}-\d{2}-\d{2}/) 
+                  ? new Date(record.completion_date).toLocaleDateString('en-GB') 
+                  : record.completion_date || '',
+                'Status': record.status || '',
+                'Notes': record.notes || '',
+                'Frequency': record.client_compliance_types?.frequency || ''
+              };
+            } else {
+              return {
+                'Task Name': record.compliance_types?.name || '',
+                'Employee': record.employees?.name || '',
+                'Branch': record.employees?.branch || '',
+                'Period': record.period_identifier || '',
+                'Completion Date': record.completion_date && record.completion_date.match(/^\d{4}-\d{2}-\d{2}/) 
+                  ? new Date(record.completion_date).toLocaleDateString('en-GB') 
+                  : record.completion_date || '',
+                'Status': record.status || '',
+                'Notes': record.notes || '',
+                'Frequency': record.compliance_types?.frequency || ''
+              };
+            }
+          });
           
           const csvContentCompliance = convertToCSV(transformedComplianceData, selectedColumns[selectedReport]);
-          filename = `compliance_report_${new Date().toISOString().split('T')[0]}`;
+          filename = `${isClientCompliance ? 'client_' : ''}compliance_report_${new Date().toISOString().split('T')[0]}`;
           downloadFile(csvContentCompliance, `${filename}.csv`, 'text/csv');
           break;
       }
