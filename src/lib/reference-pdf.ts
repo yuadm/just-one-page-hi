@@ -50,7 +50,7 @@ interface CompanySettings {
   logo?: string;
 }
 
-export const generateReferencePDF = (
+export const generateReferencePDF = async (
   reference: CompletedReference,
   applicantName: string,
   applicantDOB: string,
@@ -78,13 +78,31 @@ export const generateReferencePDF = (
   // Add company logo if available
   if (companySettings.logo) {
     try {
-      const logoWidth = 30;
-      const logoHeight = 12;
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = companySettings.logo!;
+      });
+      
+      // Calculate scaling to maintain aspect ratio
+      const maxWidth = 50;
+      const maxHeight = 25;
+      const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const logoWidth = img.width * scale;
+      const logoHeight = img.height * scale;
       const logoX = (pageWidth / 2) - (logoWidth / 2);
-      pdf.addImage(companySettings.logo, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
-      yPosition += 15;
+      
+      // Determine image type and add to PDF
+      const format = companySettings.logo.toLowerCase().includes('.png') ? 'PNG' : 'JPEG';
+      pdf.addImage(companySettings.logo, format, logoX, yPosition - 5, logoWidth, logoHeight);
+      yPosition += logoHeight + 10;
     } catch (error) {
       console.error('Error adding logo to PDF:', error);
+      // If logo fails, just add some spacing
+      yPosition += 5;
     }
   }
 
@@ -380,7 +398,7 @@ export interface ManualReferenceInput {
   };
 }
 
-export const generateManualReferencePDF = (
+export const generateManualReferencePDF = async (
   data: ManualReferenceInput,
   companySettings: CompanySettings = { name: 'Company Name' }
 ) => {
@@ -397,13 +415,31 @@ export const generateManualReferencePDF = (
   // Add company logo if available
   if (companySettings.logo) {
     try {
-      const logoWidth = 30;
-      const logoHeight = 12;
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = companySettings.logo!;
+      });
+      
+      // Calculate scaling to maintain aspect ratio
+      const maxWidth = 50;
+      const maxHeight = 25;
+      const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const logoWidth = img.width * scale;
+      const logoHeight = img.height * scale;
       const logoX = (pageWidth / 2) - (logoWidth / 2);
-      pdf.addImage(companySettings.logo, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
-      yPosition += 15;
+      
+      // Determine image type and add to PDF
+      const format = companySettings.logo.toLowerCase().includes('.png') ? 'PNG' : 'JPEG';
+      pdf.addImage(companySettings.logo, format, logoX, yPosition - 5, logoWidth, logoHeight);
+      yPosition += logoHeight + 10;
     } catch (error) {
       console.error('Error adding logo to PDF:', error);
+      // If logo fails, just add some spacing
+      yPosition += 5;
     }
   }
 
