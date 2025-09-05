@@ -14,6 +14,7 @@ import { ClientSpotCheckViewDialog } from "./ClientSpotCheckViewDialog";
 import { ClientDeleteConfirmDialog } from "./ClientDeleteConfirmDialog";
 import { generateClientSpotCheckPdf } from "@/lib/client-spot-check-pdf";
 import { useCompany } from "@/contexts/CompanyContext";
+import { AddClientComplianceRecordModal } from "./AddClientComplianceRecordModal";
 
 interface ClientCompliancePeriodViewProps {
   complianceTypeId: string;
@@ -690,6 +691,21 @@ export function ClientCompliancePeriodView({
                       </div>
                       
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        {/* Add Record Button */}
+                        <AddClientComplianceRecordModal
+                          complianceTypeId={complianceTypeId}
+                          complianceTypeName={complianceTypeName}
+                          frequency={frequency}
+                          periodIdentifier={selectedPeriod}
+                          onRecordAdded={fetchData}
+                          trigger={
+                            <Button variant="default" className="gap-2">
+                              <Plus className="w-4 h-4" />
+                              Add Record
+                            </Button>
+                          }
+                        />
+                        
                         {/* Search */}
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
