@@ -15,6 +15,7 @@ import { ClientDeleteConfirmDialog } from "./ClientDeleteConfirmDialog";
 import { generateClientSpotCheckPdf } from "@/lib/client-spot-check-pdf";
 import { useCompany } from "@/contexts/CompanyContext";
 import { AddClientComplianceRecordModal } from "./AddClientComplianceRecordModal";
+import { ClientCompliancePeriodRecordsView } from "./ClientCompliancePeriodRecordsView";
 
 interface ClientCompliancePeriodViewProps {
   complianceTypeId: string;
@@ -956,121 +957,13 @@ export function ClientCompliancePeriodView({
            )}
          </TabsContent>
 
-         <TabsContent value="periods" className="space-y-6">
-        <div className="space-y-6">
-          {/* Period Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-xl font-semibold">Client Compliance Records</h3>
-            
-            {frequency.toLowerCase() !== 'annual' && (
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="w-40 bg-background border border-input">
-                  <SelectValue placeholder="Select Year" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Periods Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {periods.map((period, index) => (
-              <Card 
-                key={period.period_identifier} 
-                className={`card-premium transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                  period.is_current ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
-                } ${selectedPeriod === period.period_identifier ? 'ring-2 ring-secondary border-secondary' : ''}`}
-                style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => {
-                  setSelectedPeriod(period.period_identifier);
-                  setActiveTab("status");
-                }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      {getPeriodLabel(period.period_identifier)}
-                    </CardTitle>
-                    {period.is_current && (
-                      <Badge className="bg-primary/10 text-primary border-primary/20">
-                        Current
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Records</p>
-                      <p className="font-semibold text-lg">{period.record_count}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Completion</p>
-                      <Badge className={getCompletionBadge(period.completion_rate)}>
-                        {period.completion_rate.toFixed(1)}%
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Archive Warning */}
-                  {period.archive_due_date && (
-                    <div className="flex items-center gap-2 p-2 bg-warning/10 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-warning" />
-                      <span className="text-sm text-warning">
-                        Archive due: {new Date(period.archive_due_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Download Button */}
-                  {period.download_available && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownloadPeriod(period);
-                      }}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Archive
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <Card className="card-premium">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-primary rounded-full"></div>
-                  <span>Current Period</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-muted-foreground" />
-                  <span>Download Available (3 months before deletion)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning" />
-                  <span>Archive Due</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
-        </TabsContent>
+          <TabsContent value="periods" className="space-y-6">
+            <ClientCompliancePeriodRecordsView
+              complianceTypeId={complianceTypeId}
+              complianceTypeName={complianceTypeName}
+              frequency={frequency}
+            />
+          </TabsContent>
       </Tabs>
 
       {/* Spot Check Dialog */}
