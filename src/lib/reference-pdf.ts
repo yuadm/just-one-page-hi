@@ -129,16 +129,29 @@ export const generateReferencePDF = async (
 
   // Applicant Information - Horizontal Layout
   pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'normal');
-  const nameText = `Name: ${applicantName}`;
-  const dobText = `Date of Birth: ${applicantDOB}`;
-  const postcodeText = `Postcode: ${applicantPostcode}`;
   
-  pdf.text(nameText, margin, yPosition);
-  const nameWidth = pdf.getTextWidth(nameText);
-  pdf.text(dobText, margin + nameWidth + 20, yPosition);
-  const dobWidth = pdf.getTextWidth(dobText);
-  pdf.text(postcodeText, margin + nameWidth + dobWidth + 40, yPosition);
+  // Name
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Name:', margin, yPosition);
+  const nameLabelWidth = pdf.getTextWidth('Name:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${applicantName}`, margin + nameLabelWidth, yPosition);
+  const nameWidth = pdf.getTextWidth(`Name: ${applicantName}`);
+  
+  // Date of Birth
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Date of Birth:', margin + nameWidth + 20, yPosition);
+  const dobLabelWidth = pdf.getTextWidth('Date of Birth:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${applicantDOB}`, margin + nameWidth + 20 + dobLabelWidth, yPosition);
+  const dobWidth = pdf.getTextWidth(`Date of Birth: ${applicantDOB}`);
+  
+  // Postcode
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Postcode:', margin + nameWidth + dobWidth + 40, yPosition);
+  const postcodeLabelWidth = pdf.getTextWidth('Postcode:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${applicantPostcode}`, margin + nameWidth + dobWidth + 40 + postcodeLabelWidth, yPosition);
   yPosition += 15;
 
   // Referee Information
@@ -473,17 +486,30 @@ export const generateManualReferencePDF = async (
   yPosition += 12;
 
   // Basic Information - Horizontal Layout
-  pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(12);
-  const nameText = `Name: ${data.applicantName}`;
-  const dobText = `Date of Birth: ${data.applicantDOB || ''}`;
-  const postcodeText = `Postcode: ${data.applicantPostcode || ''}`;
   
-  pdf.text(nameText, margin, yPosition);
-  const nameWidth = pdf.getTextWidth(nameText);
-  pdf.text(dobText, margin + nameWidth + 20, yPosition);
-  const dobWidth = pdf.getTextWidth(dobText);
-  pdf.text(postcodeText, margin + nameWidth + dobWidth + 40, yPosition);
+  // Name
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Name:', margin, yPosition);
+  const nameLabelWidth = pdf.getTextWidth('Name:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${data.applicantName}`, margin + nameLabelWidth, yPosition);
+  const nameWidth = pdf.getTextWidth(`Name: ${data.applicantName}`);
+  
+  // Date of Birth
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Date of Birth:', margin + nameWidth + 20, yPosition);
+  const dobLabelWidth = pdf.getTextWidth('Date of Birth:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${data.applicantDOB || ''}`, margin + nameWidth + 20 + dobLabelWidth, yPosition);
+  const dobWidth = pdf.getTextWidth(`Date of Birth: ${data.applicantDOB || ''}`);
+  
+  // Postcode
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Postcode:', margin + nameWidth + dobWidth + 40, yPosition);
+  const postcodeLabelWidth = pdf.getTextWidth('Postcode:');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(` ${data.applicantPostcode || ''}`, margin + nameWidth + dobWidth + 40 + postcodeLabelWidth, yPosition);
   yPosition += 15;
 
   // Referee Information
