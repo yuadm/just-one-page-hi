@@ -52,80 +52,12 @@ export default function ClientCompliance() {
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [clientTypeId, setClientTypeId] = useState<string | null>(null);
-  const [complianceType, setComplianceType] = useState<ComplianceType | null>(location.state?.complianceType as ComplianceType || null);
-
-  useEffect(() => {
-    const fetchComplianceTypeData = async () => {
-      try {
-        if (!id) return;
-        
-        // If we already have compliance type data from location state, use it
-        if (complianceType) {
-          console.log('Using compliance type from location state:', complianceType.name);
-          return;
-        }
-        
-        // Otherwise, fetch from client_compliance_types table using the ID
-        console.log('Fetching client compliance type data for ID:', id);
-        const { data: clientType, error } = await supabase
-          .from('client_compliance_types')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        if (clientType) {
-          console.log('Found client compliance type:', clientType);
-          setComplianceType({
-            id: clientType.id,
-            name: clientType.name,
-            description: clientType.description || '',
-            frequency: clientType.frequency
-          });
-          return;
-        }
-        
-        // If not found in client_compliance_types, try the main compliance_types table
-        console.log('Trying main compliance_types table for ID:', id);
-        const { data: mainType, error: mainError } = await supabase
-          .from('compliance_types')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (mainError) throw mainError;
-        
-        if (mainType) {
-          console.log('Found in main compliance_types, creating client version:', mainType);
-          setComplianceType({
-            id: mainType.id,
-            name: mainType.name,
-            description: mainType.description || '',
-            frequency: mainType.frequency
-          });
-          return;
-        }
-        
-        throw new Error('Compliance type not found');
-      } catch (e) {
-        console.error('Failed to fetch compliance type data:', e);
-        toast({
-          title: 'Compliance type not found',
-          description: 'The requested compliance type could not be found.',
-          variant: 'destructive',
-        });
-      }
-    };
-
-    fetchComplianceTypeData();
-  }, [id, toast]);
+  
+  const complianceType = location.state?.complianceType as ComplianceType;
 
   useEffect(() => {
     const resolveClientComplianceTypeId = async () => {
       try {
-        if (!complianceType) return;
-        
         console.log('Resolving client compliance type for:', complianceType.name);
         
         const { data: existing, error } = await supabase
@@ -168,8 +100,10 @@ export default function ClientCompliance() {
       }
     };
 
-    resolveClientComplianceTypeId();
-  }, [complianceType, toast]);
+    if (id && complianceType) {
+      resolveClientComplianceTypeId();
+    }
+  }, [id, complianceType, toast]);
 
   useEffect(() => {
     if (clientTypeId) {
@@ -178,8 +112,6 @@ export default function ClientCompliance() {
   }, [clientTypeId]);
 
   const getCurrentPeriod = () => {
-    if (!complianceType) return '';
-    
     const now = new Date();
     switch (complianceType.frequency.toLowerCase()) {
       case 'quarterly':
