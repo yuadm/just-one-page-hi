@@ -75,24 +75,71 @@ export const generateReferencePDF = (
     }
   };
 
-  // Add company logo if available
-  if (companySettings.logo) {
-    try {
-      const logoWidth = 30;
-      const logoHeight = 12;
-      const logoX = (pageWidth / 2) - (logoWidth / 2);
-      pdf.addImage(companySettings.logo, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
-      yPosition += 15;
-    } catch (error) {
-      console.error('Error adding logo to PDF:', error);
+  // Header with matching compliance PDF design
+  const drawHeader = () => {
+    const headerHeight = companySettings.logo ? 30 : 25;
+    
+    // Header background (light gray)
+    pdf.setFillColor(250, 250, 251); // rgb(0.98, 0.98, 0.985) converted to 0-255
+    pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+    
+    let currentY = 10;
+    
+    // Add company logo if available (centered)
+    if (companySettings.logo) {
+      try {
+        const logoWidth = 14; // Scaled down proportionally from 56px
+        const logoHeight = 6;  // Scaled down proportionally  
+        const logoX = (pageWidth / 2) - (logoWidth / 2);
+        pdf.addImage(companySettings.logo, 'JPEG', logoX, currentY, logoWidth, logoHeight);
+        currentY += logoHeight + 3;
+      } catch (error) {
+        console.error('Error adding logo to PDF:', error);
+      }
     }
-  }
 
-  // Add company name
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(companySettings.name, pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 12;
+    // Company name (centered, bold)
+    if (companySettings.name) {
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      const companyNameWidth = pdf.getTextWidth(companySettings.name);
+      const companyNameX = (pageWidth - companyNameWidth) / 2;
+      pdf.text(companySettings.name, companyNameX, currentY);
+      currentY += 6;
+    }
+
+    // Report title (centered, bold)
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    const title = 'Reference Report';
+    const titleWidth = pdf.getTextWidth(title);
+    const titleX = (pageWidth - titleWidth) / 2;
+    pdf.text(title, titleX, currentY);
+    currentY += 8;
+
+    // Date (centered, subtle color)
+    const dateText = new Date().toLocaleDateString('en-GB');
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(153, 153, 153); // rgb(0.6, 0.6, 0.6) converted to 0-255
+    const dateWidth = pdf.getTextWidth(dateText);
+    const dateX = (pageWidth - dateWidth) / 2;
+    pdf.text(dateText, dateX, currentY);
+
+    // Divider line
+    pdf.setDrawColor(217, 217, 217); // rgb(0.85, 0.85, 0.85) converted to 0-255
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, headerHeight, pageWidth - margin, headerHeight);
+    
+    return headerHeight + 8;
+  };
+
+  yPosition = drawHeader();
+
+  // Reset text color to black for content
+  pdf.setTextColor(0, 0, 0);
 
   // Helper function to add text with word wrap
   const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 11): number => {
@@ -394,25 +441,6 @@ export const generateManualReferencePDF = (
   // Set font to support Unicode characters
   pdf.setFont('helvetica', 'normal');
 
-  // Add company logo if available
-  if (companySettings.logo) {
-    try {
-      const logoWidth = 30;
-      const logoHeight = 12;
-      const logoX = (pageWidth / 2) - (logoWidth / 2);
-      pdf.addImage(companySettings.logo, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
-      yPosition += 15;
-    } catch (error) {
-      console.error('Error adding logo to PDF:', error);
-    }
-  }
-
-  // Add company name
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(12);
-  pdf.text(companySettings.name, pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 12;
-
   // Helper function to add text with word wrap
   const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 11): number => {
     pdf.setFontSize(fontSize);
@@ -428,6 +456,72 @@ export const generateManualReferencePDF = (
       yPosition = 30;
     }
   };
+
+  // Header with matching compliance PDF design
+  const drawHeader = () => {
+    const headerHeight = companySettings.logo ? 30 : 25;
+    
+    // Header background (light gray)
+    pdf.setFillColor(250, 250, 251); // rgb(0.98, 0.98, 0.985) converted to 0-255
+    pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+    
+    let currentY = 10;
+    
+    // Add company logo if available (centered)
+    if (companySettings.logo) {
+      try {
+        const logoWidth = 14; // Scaled down proportionally from 56px
+        const logoHeight = 6;  // Scaled down proportionally  
+        const logoX = (pageWidth / 2) - (logoWidth / 2);
+        pdf.addImage(companySettings.logo, 'JPEG', logoX, currentY, logoWidth, logoHeight);
+        currentY += logoHeight + 3;
+      } catch (error) {
+        console.error('Error adding logo to PDF:', error);
+      }
+    }
+
+    // Company name (centered, bold)
+    if (companySettings.name) {
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      const companyNameWidth = pdf.getTextWidth(companySettings.name);
+      const companyNameX = (pageWidth - companyNameWidth) / 2;
+      pdf.text(companySettings.name, companyNameX, currentY);
+      currentY += 6;
+    }
+
+    // Report title (centered, bold)
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    const title = 'Reference Report';
+    const titleWidth = pdf.getTextWidth(title);
+    const titleX = (pageWidth - titleWidth) / 2;
+    pdf.text(title, titleX, currentY);
+    currentY += 8;
+
+    // Date (centered, subtle color)
+    const dateText = new Date().toLocaleDateString('en-GB');
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(153, 153, 153); // rgb(0.6, 0.6, 0.6) converted to 0-255
+    const dateWidth = pdf.getTextWidth(dateText);
+    const dateX = (pageWidth - dateWidth) / 2;
+    pdf.text(dateText, dateX, currentY);
+
+    // Divider line
+    pdf.setDrawColor(217, 217, 217); // rgb(0.85, 0.85, 0.85) converted to 0-255
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, headerHeight, pageWidth - margin, headerHeight);
+    
+    return headerHeight + 8;
+  };
+
+  yPosition = drawHeader();
+
+  // Reset text color to black for content
+  pdf.setTextColor(0, 0, 0);
 
   // Title
   pdf.setFont('helvetica', 'bold');
