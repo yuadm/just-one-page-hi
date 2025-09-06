@@ -253,8 +253,8 @@ export const generateReferencePDF = async (
     yPosition += lineHeight + 5;
 
     pdf.setFont('helvetica', 'bold');
-    yPosition = addWrappedText('Please describe your relationship with this person, including how long you have known them:', margin, yPosition, pageWidth - 2 * margin, 11);
-    yPosition += 2;
+    pdf.text('Please describe your relationship with this person, including how long you have known them:', margin, yPosition);
+    yPosition += lineHeight;
     pdf.setFont('helvetica', 'normal');
     yPosition = addWrappedText(`${reference.form_data.relationshipDescription || 'Not provided'}`, margin, yPosition, pageWidth - 2 * margin);
     yPosition += 5;
