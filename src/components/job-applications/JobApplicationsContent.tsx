@@ -330,17 +330,6 @@ Please complete and return this reference as soon as possible.`;
           </SelectContent>
         </Select>
         <DatePickerWithRange date={dateRange} setDate={(d) => { setPage(1); setDateRange(d); }} />
-        <Select value={pageSize.toString()} onValueChange={(val) => { setPage(1); setPageSize(parseInt(val)); }}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10 per page</SelectItem>
-            <SelectItem value="25">25 per page</SelectItem>
-            <SelectItem value="50">50 per page</SelectItem>
-            <SelectItem value="100">100 per page</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       {/* Applications Table */}
       <Card>
@@ -528,6 +517,23 @@ Please complete and return this reference as soon as possible.`;
           </PaginationContent>
         </Pagination>
       )}
+      
+      {/* Page Size Selector */}
+      <div className="flex justify-center items-center gap-4 mt-4">
+        <span className="text-sm text-muted-foreground">Items per page:</span>
+        <Select value={pageSize.toString()} onValueChange={(val) => { setPage(1); setPageSize(parseInt(val)); }}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10 per page</SelectItem>
+            <SelectItem value="25">25 per page</SelectItem>
+            <SelectItem value="50">50 per page</SelectItem>
+            <SelectItem value="100">100 per page</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {displayedApplications.length === 0 && (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
