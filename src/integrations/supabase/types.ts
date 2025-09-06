@@ -2379,6 +2379,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_leave_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_leave_settings_internal: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_period_identifier: {
         Args: { frequency: string; target_date?: string }
         Returns: string
@@ -2416,9 +2424,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      reset_all_leave_balances: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       run_historical_data_backfill: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      run_leave_annual_reset_if_needed: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       update_compliance_statuses: {
         Args: Record<PropertyKey, never>
