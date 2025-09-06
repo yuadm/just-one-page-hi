@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar, Download, AlertTriangle, Plus, Eye, Edit, Trash2, Filter, Users, Search, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, Clock, Shield } from "lucide-react";
+import { Calendar, Download, AlertTriangle, Plus, Eye, Edit, Trash2, Filter, Users, Search, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, Clock, Shield, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import ClientSpotCheckFormDialog, { ClientSpotCheckFormData } from "./ClientSpot
 import { ClientSpotCheckViewDialog } from "./ClientSpotCheckViewDialog";
 import { ClientDeleteConfirmDialog } from "./ClientDeleteConfirmDialog";
 import { generateClientSpotCheckPdf } from "@/lib/client-spot-check-pdf";
+import JSZip from 'jszip';
 
 import { AddClientComplianceRecordModal } from "./AddClientComplianceRecordModal";
 
@@ -90,6 +91,7 @@ export function ClientCompliancePeriodView({
   const [selectedSpotCheckRecord, setSelectedSpotCheckRecord] = useState<any>(null);
   const [editingSpotCheckData, setEditingSpotCheckData] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
   const { toast } = useToast();
   const { companySettings } = useCompany();
 
@@ -446,6 +448,126 @@ export function ClientCompliancePeriodView({
     }
   };
 
+  const handleBulkDownload = async () => {
+    if (!selectedPeriod) {
+      toast({
+        title: "No period selected",
+        description: "Please select a period first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkDownloading(true);
+    
+    try {
+      // Fetch all completed records for the current period
+      const { data: periodRecords, error: recordsError } = await supabase
+        .from('client_compliance_period_records')
+        .select(`
+          *,
+          clients (
+            name,
+            branches (
+              name
+            )
+          ),
+          client_spot_check_records (
+            *
+          )
+        `)
+        .eq('client_compliance_type_id', complianceTypeId)
+        .eq('period_identifier', selectedPeriod)
+        .eq('status', 'completed');
+
+      if (recordsError) throw recordsError;
+
+      if (!periodRecords || periodRecords.length === 0) {
+        toast({
+          title: "No data to download",
+          description: "No completed compliance records found for this period.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const zip = new JSZip();
+      let addedCount = 0;
+
+      // Generate PDF for each completed record
+      for (const record of periodRecords) {
+        if (record.client_spot_check_records && record.client_spot_check_records.length > 0) {
+          const spotCheckRecord = record.client_spot_check_records[0];
+          
+          // Transform the data to match the client PDF format
+          const pdfData = {
+            serviceUserName: (spotCheckRecord as any)?.service_user_name || record.clients?.name || 'Unknown',
+            date: (spotCheckRecord as any)?.date || record.completion_date || '',
+            completedBy: (spotCheckRecord as any)?.performed_by || 'Not specified',
+            observations: Array.isArray((spotCheckRecord as any)?.observations) 
+              ? (spotCheckRecord as any).observations.map((obs: any) => ({
+                  label: obs.label || '',
+                  value: obs.value || 'not_applicable',
+                  comments: obs.comments || ''
+                }))
+              : []
+          };
+
+          // Generate PDF blob
+          const pdfResult = await generateClientSpotCheckPdf(pdfData, {
+            name: companySettings?.name,
+            logo: companySettings?.logo
+          }, true);
+
+          if (pdfResult && typeof pdfResult === 'object' && 'blob' in pdfResult) {
+            zip.file(pdfResult.filename, pdfResult.blob);
+            addedCount++;
+          }
+        }
+      }
+
+      if (addedCount === 0) {
+        toast({
+          title: "No PDFs generated",
+          description: "No spot check records found for completed compliance records.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create zip file
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      
+      // Create filename based on the requested format: "compliance type,frequency,datedownloaded.zip"
+      const downloadDate = new Date().toISOString().split('T')[0];
+      const filename = `${complianceTypeName},${frequency},${downloadDate}.zip`;
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Bulk download completed",
+        description: `Downloaded ${addedCount} PDFs for ${getPeriodLabel(selectedPeriod)}.`,
+      });
+
+    } catch (error) {
+      console.error('Error during bulk download:', error);
+      toast({
+        title: "Bulk download failed",
+        description: "Could not download the compliance records. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkDownloading(false);
+    }
+  };
+
   const getPeriodLabel = (periodId: string) => {
     switch (frequency.toLowerCase()) {
       case 'quarterly':
@@ -702,6 +824,27 @@ export function ClientCompliancePeriodView({
                             className="pl-10 w-64 bg-background border-border/50 focus:border-primary/50"
                           />
                         </div>
+
+                        {/* Bulk Download Button */}
+                        <Button
+                          onClick={handleBulkDownload}
+                          disabled={!selectedPeriod || bulkDownloading}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          {bulkDownloading ? (
+                            <>
+                              <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Downloading...
+                            </>
+                          ) : (
+                            <>
+                              <Package className="w-4 h-4" />
+                              Download All PDFs
+                            </>
+                          )}
+                        </Button>
                         
                         {/* Branch Filter */}
                         <div className="flex items-center gap-2">

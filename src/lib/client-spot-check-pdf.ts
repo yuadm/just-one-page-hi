@@ -20,7 +20,7 @@ interface CompanyInfo {
   logo?: string
 }
 
-export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, company?: CompanyInfo) {
+export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, company?: CompanyInfo, returnBlob?: boolean) {
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
   let page = doc.addPage()
@@ -353,6 +353,14 @@ export async function generateClientSpotCheckPdf(data: ClientSpotCheckFormData, 
 
   const bytes = await doc.save()
   const blob = new Blob([bytes], { type: 'application/pdf' })
+  
+  if (returnBlob) {
+    const checkDate = data.date ? new Date(data.date) : new Date()
+    const quarter = Math.floor(checkDate.getMonth() / 3) + 1
+    const filename = `${data.serviceUserName || 'Client'} Q${quarter} ${checkDate.getFullYear()} client spot check.pdf`
+    return { blob, filename }
+  }
+  
   const url = URL.createObjectURL(blob)
   const checkDate = data.date ? new Date(data.date) : new Date()
   const quarter = Math.floor(checkDate.getMonth() / 3) + 1
