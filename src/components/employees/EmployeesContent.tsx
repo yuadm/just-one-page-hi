@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/contexts/PermissionsContext";
@@ -107,6 +108,8 @@ export function EmployeesContent() {
     remaining_leave_days: 28,
     hours_restriction: ""
   });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -490,10 +493,10 @@ export function EmployeesContent() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedEmployees.length === filteredEmployees.length) {
+    if (selectedEmployees.length === paginatedEmployees.length) {
       setSelectedEmployees([]);
     } else {
-      setSelectedEmployees(filteredEmployees.map(emp => emp.id));
+      setSelectedEmployees(paginatedEmployees.map(emp => emp.id));
     }
   };
 
@@ -810,6 +813,11 @@ export function EmployeesContent() {
     );
   };
 
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(parseInt(newPageSize));
+    setPage(1); // Reset to first page when changing page size
+  };
+
   const filteredEmployees = employees.filter(employee => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -871,6 +879,13 @@ export function EmployeesContent() {
       return sortDirection === 'asc' ? comparison : -comparison;
     }
   });
+
+  // Pagination logic
+  const totalCount = filteredEmployees.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
 
   // Calculate stats
   const totalEmployees = employees.length;
@@ -942,11 +957,11 @@ export function EmployeesContent() {
           <Input
             placeholder="Search employees..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {setSearchTerm(e.target.value); setPage(1);}}
             className="pl-10 bg-card border-input-border"
           />
         </div>
-        <Select value={branchFilter} onValueChange={setBranchFilter}>
+        <Select value={branchFilter} onValueChange={(val) => {setBranchFilter(val); setPage(1);}}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by branch" />
           </SelectTrigger>
@@ -1023,11 +1038,11 @@ export function EmployeesContent() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Employee Directory ({filteredEmployees.length})
+            Employee Directory ({totalCount})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredEmployees.length === 0 ? (
+          {totalCount === 0 ? (
             <div className="text-center py-12">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No employees found</h3>
@@ -1045,7 +1060,7 @@ export function EmployeesContent() {
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox 
-                        checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                        checked={selectedEmployees.length === paginatedEmployees.length && paginatedEmployees.length > 0}
                         onCheckedChange={toggleSelectAll}
                         aria-label="Select all employees"
                       />
@@ -1099,7 +1114,7 @@ export function EmployeesContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEmployees.map((employee) => {
+                  {paginatedEmployees.map((employee) => {
                     const leaveUsage = employee.leave_allowance 
                       ? Math.round((Number(employee.leave_taken) / employee.leave_allowance) * 100)
                       : 0;
@@ -1187,6 +1202,66 @@ export function EmployeesContent() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          
+          {totalCount > pageSize && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page > 1) setPage(page - 1);
+                      }}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+                    const pageNumber = start + i;
+                    if (pageNumber > totalPages) return null;
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          href="#"
+                          isActive={pageNumber === page}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(pageNumber);
+                          }}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page < totalPages) setPage(page + 1);
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
