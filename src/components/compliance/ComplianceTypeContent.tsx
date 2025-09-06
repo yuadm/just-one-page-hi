@@ -961,74 +961,83 @@ const handleStatusCardClick = (status: 'compliant' | 'overdue' | 'due' | 'pendin
               </div>
             </div>
             
-            {getFilteredEmployeeList().length === 0 ? (
-              <Card className="card-premium">
-                <CardContent className="p-12 text-center">
-                  <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    {filteredStatus ? `No ${filteredStatus} employees found` : 'No employees found'}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {filteredStatus 
-                      ? `No employees have ${filteredStatus} status for this compliance type.`
-                      : 'No employees are available for compliance tracking.'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="card-premium">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-3">
-                      <Users className="w-6 h-6" />
-                      Employee Compliance Status
-                    </CardTitle>
-                    <div className="flex items-center gap-4">
-                      {/* Search */}
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search employees..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 w-64 bg-background border-border/50 focus:border-primary/50"
-                        />
-                      </div>
-                      
-                      {/* Branch Filter */}
-                      <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4" />
-                        <Select value={branchFilter} onValueChange={setBranchFilter}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Filter by branch" />
-                          </SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="all">All Branches</SelectItem>
-                            {/* Only show branches that the user has access to */}
-                            {(() => {
-                              const accessibleBranches = getAccessibleBranches();
-                              const branchesToShow = isAdmin 
-                                ? uniqueBranches 
-                                : uniqueBranches.filter(branchName => {
-                                    const branchId = branches.find(b => b.name === branchName)?.id;
-                                    return accessibleBranches.includes(branchId || '');
-                                  });
-                              
-                              return branchesToShow.map((branch) => (
-                                <SelectItem key={branch} value={branch}>
-                                  {branch}
-                                </SelectItem>
-                              ));
-                            })()}
-                          </SelectContent>
-                        </Select>
-                      </div>
+            <Card className="card-premium">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3">
+                    <Users className="w-6 h-6" />
+                    Employee Compliance Status
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search employees..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 w-64 bg-background border-border/50 focus:border-primary/50"
+                      />
+                    </div>
+                    
+                    {/* Branch Filter */}
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      <Select value={branchFilter} onValueChange={setBranchFilter}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Filter by branch" />
+                        </SelectTrigger>
+                       <SelectContent>
+                          <SelectItem value="all">All Branches</SelectItem>
+                          {/* Only show branches that the user has access to */}
+                          {(() => {
+                            const accessibleBranches = getAccessibleBranches();
+                            const branchesToShow = isAdmin 
+                              ? uniqueBranches 
+                              : uniqueBranches.filter(branchName => {
+                                  const branchId = branches.find(b => b.name === branchName)?.id;
+                                  return accessibleBranches.includes(branchId || '');
+                                });
+                            
+                            return branchesToShow.map((branch) => (
+                              <SelectItem key={branch} value={branch}>
+                                {branch}
+                              </SelectItem>
+                            ));
+                          })()}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">{getFilteredEmployeeList().length === 0 ? (
+                <div className="p-12 text-center">
+                  <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    {searchTerm.trim() ? 'No employees match your search' : (filteredStatus ? `No ${filteredStatus} employees found` : 'No employees found')}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm.trim() 
+                      ? `Try adjusting your search criteria or clearing the search to see all employees.`
+                      : (filteredStatus 
+                        ? `No employees have ${filteredStatus} status for this compliance type.`
+                        : 'No employees are available for compliance tracking.'
+                      )
+                    }
+                  </p>
+                  {searchTerm.trim() && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setSearchTerm('')}
+                      className="mt-2"
+                    >
+                      Clear Search
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead 
@@ -1349,11 +1358,11 @@ const handleStatusCardClick = (status: 'compliant' | 'overdue' | 'due' | 'pendin
                           </TableCell>
                         </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+                     </TableBody>
+                   </Table>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
