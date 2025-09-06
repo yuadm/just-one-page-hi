@@ -502,7 +502,10 @@ Please complete and return this reference as soon as possible.`;
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (page > 1) setPage(page - 1);
+                    if (page > 1) {
+                      setPage(page - 1);
+                      window.scrollTo(0, 0);
+                    }
                   }}
                 />
               </PaginationItem>
@@ -518,6 +521,7 @@ Please complete and return this reference as soon as possible.`;
                       onClick={(e) => {
                         e.preventDefault();
                         setPage(pageNumber);
+                        window.scrollTo(0, 0);
                       }}
                     >
                       {pageNumber}
@@ -530,7 +534,10 @@ Please complete and return this reference as soon as possible.`;
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (page < totalPages) setPage(page + 1);
+                    if (page < totalPages) {
+                      setPage(page + 1);
+                      window.scrollTo(0, 0);
+                    }
                   }}
                 />
               </PaginationItem>

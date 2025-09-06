@@ -1228,7 +1228,10 @@ export function EmployeesContent() {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (page > 1) setPage(page - 1);
+                        if (page > 1) {
+                          setPage(page - 1);
+                          window.scrollTo(0, 0);
+                        }
                       }}
                     />
                   </PaginationItem>
@@ -1244,6 +1247,7 @@ export function EmployeesContent() {
                           onClick={(e) => {
                             e.preventDefault();
                             setPage(pageNumber);
+                            window.scrollTo(0, 0);
                           }}
                         >
                           {pageNumber}
@@ -1256,7 +1260,10 @@ export function EmployeesContent() {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (page < totalPages) setPage(page + 1);
+                        if (page < totalPages) {
+                          setPage(page + 1);
+                          window.scrollTo(0, 0);
+                        }
                       }}
                     />
                   </PaginationItem>
