@@ -54,19 +54,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch company settings for logo and proper company name
-    const { data: companySettingsData } = await supabase
-      .from('company_settings')
-      .select('*')
-      .maybeSingle();
-
-    const companyLogo = companySettingsData?.logo;
-    const actualCompanyName = companySettingsData?.name || companyName || 'Your Company Name';
-
     // Derive site origin from request for building public URL
     const siteOrigin = req.headers.get("origin") || `${new URL(req.url).protocol}//${new URL(req.url).host}`;
     const referenceToken = crypto.randomUUID();
-    const safeCompanyName = actualCompanyName;
+    const safeCompanyName = companyName && companyName.trim().length > 0 ? companyName : 'Your Company Name';
     const roleTitle = positionAppliedFor && positionAppliedFor.trim().length > 0 ? positionAppliedFor : 'Support Worker/Carer';
     const referenceLink = `${siteOrigin}/reference?token=${referenceToken}`;
 
@@ -108,21 +99,14 @@ const handler = async (req: Request): Promise<Response> => {
     <title>${emailSubject}</title>
     <style>
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;margin:0;padding:0}
-      .container{max-width:640px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1)}
-      .header{background:linear-gradient(135deg, #111827 0%, #374151 100%);padding:32px;text-align:center;color:#fff}
-      .logo{max-width:120px;max-height:60px;margin:0 auto 16px;display:block}
+      .container{max-width:640px;margin:0 auto;background:#fff}
       .content{padding:32px}
-      .btn{display:inline-block;background:linear-gradient(135deg, #111827 0%, #374151 100%);color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;box-shadow:0 2px 4px rgb(0 0 0 / 0.1)}
+      .btn{display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600}
       .footer{background:#f3f4f6;padding:20px;text-align:center;color:#6b7280;font-size:12px}
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        ${companyLogo ? `<img src="${companyLogo}" alt="${safeCompanyName} Logo" class="logo" />` : ''}
-        <h1 style="margin:0;font-size:24px;font-weight:700;">${safeCompanyName}</h1>
-        <p style="margin:8px 0 0 0;opacity:0.9;">Reference Request</p>
-      </div>
       <div class="content">
         ${emailContent}
         <p style="margin:0 0 16px 0;">To provide your reference, please click the link below and complete the short form:</p>
@@ -136,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
         </p>
         <p style="word-break:break-all; color:#374151; font-size:12px;">${referenceLink}</p>
         <p style="margin:24px 0 0 0;">Thank you very much for your time and assistance.</p>
-        <p style="margin:16px 0 0 0;">Best regards,<br/>HR Team<br/>${safeCompanyName}</p>
+        <p style="margin:16px 0 0 0;">Best regards,<br/>Yusuf<br/>Hr<br/>${safeCompanyName}</p>
       </div>
       <div class="footer">
         <p style="margin:0;">This link is unique to you. Please do not share it.</p>
@@ -183,8 +167,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const payload = {
-      sender: { name: `${safeCompanyName}`, email: "yuadm3@gmail.com" },
-      replyTo: { name: `${safeCompanyName}`, email: "yuadm3@gmail.com" },
+      sender: { name: `${safeCompanyName} HR`, email: "yuadm3@gmail.com" },
+      replyTo: { name: `${safeCompanyName} HR`, email: "yuadm3@gmail.com" },
       to: [{ email: referenceEmail, name: referenceName }],
       subject: emailSubject,
       htmlContent: emailHtml,

@@ -178,33 +178,9 @@ export function ReferenceForm({ token }: ReferenceFormProps) {
 
       if (updateError) throw updateError;
 
-      // Send completion notification email
-      try {
-        const applicantName = application.personal_info?.fullName || 'Applicant';
-        const response = await fetch('/api/send-reference-completion-notification', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            referenceEmail: referenceRequest.reference_email,
-            referenceName: referenceRequest.reference_name,
-            applicantName: applicantName,
-            referenceType: referenceRequest.reference_type
-          }),
-        });
-
-        if (!response.ok) {
-          console.error('Failed to send completion notification');
-        }
-      } catch (notificationError) {
-        console.error('Error sending completion notification:', notificationError);
-        // Don't fail the entire submission if notification fails
-      }
-
       toast({
         title: "Reference Submitted",
-        description: "Thank you for providing your reference. It has been submitted successfully and a confirmation email has been sent.",
+        description: "Thank you for providing your reference. It has been submitted successfully.",
       });
 
       // Update local state to show completion message
